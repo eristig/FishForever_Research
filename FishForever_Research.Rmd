@@ -17,6 +17,7 @@ library(ggplot2)
 library(kableExtra)
 library(knitr)
 library(naniar)
+library(here)
 
 ```
 
@@ -25,28 +26,25 @@ library(naniar)
 # Read in the data
 
 # Indonesia
-hhs_indonesia <- read_csv(here::here("raw_data", "hhs_indonesia_raw.csv")) %>% 
-  clean_names()
+hhs_indonesia <- read_csv(here::here("raw_data", "hhs_indonesia_raw.csv"))
   #filter(region == "SoCal")
 
-# Brazil
-hhs_brazil <- read_csv(here::here("raw_data", "hhs_brazil_raw.csv")) %>% 
-  clean_names()
-
-# Honduras
-hhs_honduras <- read_csv(here::here("raw_data", "hhs_honduras_raw.csv")) %>% 
-  clean_names()
-
-# Micronesia
-hhs_micronesia <- read_csv(here::here("raw_data", "hhs_micronesia_raw.csv")) %>% 
-  clean_names()
-
-# Mozambique
-hhs_mozambique <- read_csv(here::here("raw_data", "hhs_mozambique_raw.csv")) %>% 
-  clean_names()
-
-# Philippines
-hhs_philippines <- read_csv(here::here("raw_data", "hhs_philippines_raw.csv")) %>% 
-  clean_names()
+# # Brazil
+# hhs_brazil <- read_csv(here::here("raw_data", "hhs_brazil_raw.csv")) 
+# 
+# # Honduras
+# hhs_honduras <- read_csv(here::here("raw_data", "hhs_honduras_raw.csv"))
+# 
+# # Micronesia
+# hhs_micronesia <- read_csv(here::here("raw_data", "hhs_micronesia_raw.csv")) %>% 
+#   clean_names()
+# 
+# # Mozambique
+# hhs_mozambique <- read_csv(here::here("raw_data", "hhs_mozambique_raw.csv")) %>% 
+#   clean_names()
+# 
+# # Philippines
+# hhs_philippines <- read_csv(here::here("raw_data", "hhs_philippines_raw.csv")) %>% 
+#   clean_names()
 
 ```
