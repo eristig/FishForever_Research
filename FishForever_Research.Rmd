@@ -1,10 +1,11 @@
 ---
-title: "FishForever_Research"
-output: html_document
+output: 
+html_document:
+  theme: lumen
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 ```
 
 
@@ -18,33 +19,260 @@ library(kableExtra)
 library(knitr)
 library(naniar)
 library(here)
+library(dplyr)
 
 ```
 
 
-```{r cars}
+```{r, include = FALSE}
 # Read in the data
 
 # Indonesia
 hhs_indonesia <- read_csv(here::here("raw_data", "hhs_indonesia_raw.csv"))
   #filter(region == "SoCal")
 
-# # Brazil
-# hhs_brazil <- read_csv(here::here("raw_data", "hhs_brazil_raw.csv")) 
-# 
-# # Honduras
-# hhs_honduras <- read_csv(here::here("raw_data", "hhs_honduras_raw.csv"))
-# 
-# # Micronesia
-# hhs_micronesia <- read_csv(here::here("raw_data", "hhs_micronesia_raw.csv")) %>% 
-#   clean_names()
-# 
-# # Mozambique
-# hhs_mozambique <- read_csv(here::here("raw_data", "hhs_mozambique_raw.csv")) %>% 
-#   clean_names()
-# 
-# # Philippines
-# hhs_philippines <- read_csv(here::here("raw_data", "hhs_philippines_raw.csv")) %>% 
-#   clean_names()
+# Brazil
+hhs_brazil <- read_csv(here::here("raw_data", "hhs_brazil_raw.csv"))
+
+# Honduras
+hhs_honduras <- read_csv(here::here("raw_data", "hhs_honduras_raw.csv"))
+
+# Micronesia
+hhs_micronesia <- read_csv(here::here("raw_data", "hhs_micronesia_raw.csv")) %>%
+  clean_names()
+
+# Mozambique
+hhs_mozambique <- read_csv(here::here("raw_data", "hhs_mozambique_raw.csv")) %>%
+  clean_names()
+
+# Philippines
+hhs_philippines <- read_csv(here::here("raw_data", "hhs_philippines_raw.csv")) %>%
+  clean_names()
+  #mutate(`x27n_emergency_other` = as.character(`x27n_emergency_other`))
 
 ```
+
+```{r}
+# Created combined dataframe
+
+#Problems with this:
+  # some columns are classified differently for different dataframes ie. character v. double
+  # Brazil, Honduras, Indonesia column names do not start with x
+  # Micronesia, Mozambique, Philippines column names do start with x
+
+#hhs_global <- bind_rows(list(hhs_brazil, hhs_honduras, hhs_indonesia))
+
+```
+
+<div align="center"> <font size="+3"> **Fish Forever - Summary of HHSs** </font> 
+<div align="center"> <font size="+2"> Engagement-Agreement Research </font> 
+
+***
+
+<div align="left"> <font size="+3"> **Indonesia** </font>
+
+```{r}
+# Summary Survey Data - Location breakdown
+
+## Indonesia
+# Create subset for location breakdown of surveys
+indonesia_summary <- hhs_indonesia %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(indonesia_summary, format = "html", caption = "Indonesia Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(indonesia_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+## Engagement data summary
+# Create subset for engagement relevant questions
+indonesia_engagement <- hhs_indonesia %>%
+  select(c(1:12, `43_ma_benefits`, `43_ma_benefits_opinion`, `49_enforcement_responsible`, `52_ma_benefit_5yrs`, `53_encourage_regulations`, `61a_current_regulations`, `61b_catch_recording`, `61c_community_participation`, `61d_strong_enforcement`, `61e_violations_decrease_profit`, `61f_rights_distribution_fair`, `61g_fishing_change_behavior`, `61h_individual_behavior`, `62_reserve_compliance`, `63_fishing_in_reserve`, `63_times_fishing_reserve`, `64_wrong_fishing_reserve`, `66_response_fishing_reserve`, `66_reaction_fishing_reserve`)) %>% 
+  drop_na(13, 15:27, 29:30) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(indonesia_engagement, format = "html", caption = "Indonesia Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(indonesia_engagement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+# Create subset for engagement relevant questions
+indonesia_agreement <- hhs_indonesia %>%
+  select(c(1:12, `10_mpa_important`, `30_trust_fishers_community`, `30_trust_fishers_other`, `31_my_community_ability`, `43_ma_benefits`, `43_ma_benefits_opinion`, `46_represent_interests`, `47_represent_contributions`, `52_ma_benefit_5yrs`, `53_encourage_regulations`, `61a_current_regulations`, `61b_catch_recording`, `61c_community_participation`, `61d_strong_enforcement`, `61e_violations_decrease_profit`, `61f_rights_distribution_fair`, `61g_fishing_change_behavior`, `61h_individual_behavior`, `63_fishing_in_reserve`, `63_times_fishing_reserve`, `64_wrong_fishing_reserve`)) %>% 
+  drop_na(13:17, 19:31, 33) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(indonesia_agreement, format = "html", caption = "Indonesia Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(indonesia_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+```
+
+***
+
+<div align="left"> <font size="+3"> **Brazil** </font>
+
+```{r}
+# Summary Survey Data - Location breakdown
+
+## Brazil
+# Create subset for location breakdown of surveys
+brazil_summary <- hhs_brazil %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(brazil_summary, format = "html", caption = "Brazil Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(brazil_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Honduras** </font>
+
+```{r}
+## Honduras
+# Create subset for location breakdown of surveys
+honduras_summary <- hhs_honduras %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(honduras_summary, format = "html", caption = "Honduras Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(honduras_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Micronesia** </font>
+
+```{r}
+## Micronesia
+# Create subset for location breakdown of surveys
+micronesia_summary <- hhs_micronesia %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(micronesia_summary, format = "html", caption = "Micronesia Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(micronesia_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Mozambique** </font>
+
+```{r}
+## Mozambique
+# Create subset for location breakdown of surveys
+mozambique_summary <- hhs_mozambique %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(mozambique_summary, format = "html", caption = "Mozambique Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(mozambique_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Philippines** </font>
+
+```{r}
+## Philippines
+# Create subset for location breakdown of surveys
+philippines_summary <- hhs_philippines %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(philippines_summary, format = "html", caption = "Philippines Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(philippines_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
