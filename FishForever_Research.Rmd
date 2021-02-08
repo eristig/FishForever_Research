@@ -85,6 +85,75 @@ write_csv(hhs_global, "hhs_global.csv", append = FALSE)
 <div align="center"> <font size="+3"> **Fish Forever - Summary of HHSs** </font> 
 <div align="center"> <font size="+2"> Engagement-Agreement Research </font> 
 
+
+***
+
+<div align="left"> <font size="+3"> **Unique Answers per Question** </font>
+
+```{r}
+ #create unique function by question
+unique_qs <- function(hhs_global, question){
+  
+  question <- hhs_global %>% 
+  group_by(country) %>%
+  distinct(question) %>% 
+  select(question) %>% 
+  arrange(country, -question)
+
+question_table <- knitr::kable(question, format = "html", caption = "question") %>% 
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+return(question_table)
+
+}
+
+### create vector for loop
+question <- hhs_global$(x43_ma_benefits, x43_ma_benefits_opinion)
+
+### create loop 
+for (i in seq_along(question)) {
+  unique_qs(hhs_global, question[i])
+}
+
+
+
+x10_mpa_important
+
+x43_ma_benefits <- hhs_global %>% 
+  group_by(country, distinct(x43_ma_benefits)) %>%
+  distinct(x43_ma_benefits) %>% 
+  select(x43_ma_benefits) %>% 
+  arrange(country, -x43_ma_benefits)
+
+knitr::kable(x43_ma_benefits, format = "html", caption = "x43_ma_benefits") %>% 
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+x43_ma_benefits_opinion <- hhs_global %>% 
+  group_by(country) %>%
+  distinct(x43_ma_benefits_opinion) %>% 
+  select(x43_ma_benefits_opinion) %>% 
+  arrange(country, x43_ma_benefits_opinion)
+
+knitr::kable(x43_ma_benefits_opinion, format = "html", caption = "x43_ma_benefits_opinion") %>% 
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+
+# 
+# hhs_global_answers <- hhs_global[!duplicated(hhs_global[ , c("x43_ma_benefits", "x43_ma_benefits_opinion", "x49_enforcement_responsible")]), ] %>% 
+#   select(x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible)
+# 
+# hhs_global_answers
+# 
+# , x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x46_represent_interests, x47_represent_contributions
+# 
+#   select(x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x46_represent_interests, x47_represent_contributions) 
+
+```
+
+
 ***
 
 <div align="left"> <font size="+3"> **Engagement** </font>
@@ -93,8 +162,9 @@ write_csv(hhs_global, "hhs_global.csv", append = FALSE)
 # Check out stats for engagement related questions
 
 ## Create subset of global with only engagement question columns
+# Questions 44, 45, 48 not in data
 hhs_global_engagement <- hhs_global %>% 
-  select(c(x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve))
+  select(c(x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior))
 
   ## Create summary dataframe of engagement questions - % of surveys with question answered
 engagement_sums <- colSums(is.na(hhs_global_engagement)) %>% 
@@ -126,7 +196,7 @@ knitr::kable(engagement_sums, format = "html", caption = "Engagement Questions B
 
 ## Create subset of global with only agreement question columns
 hhs_global_agreement <- hhs_global %>% 
-  select(c(x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve))
+  select(c(x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61e_violations_decrease_profit, x62_reserve_compliance, x64_wrong_fishing_reserve))
 
   ## Create summary dataframe of agreement questions - % of surveys with question answered
 agreement_sums <- colSums(is.na(hhs_global_agreement)) %>% 
