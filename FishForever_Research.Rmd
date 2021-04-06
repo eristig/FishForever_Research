@@ -51,7 +51,10 @@ hhs_mozambique <- read_csv(here::here("raw_data", "hhs", "hhs_mozambique_raw.csv
 # Philippines
 hhs_philippines <- read_csv(here::here("raw_data", "hhs", "hhs_philippines_raw.csv")) %>%
   clean_names()
-  #mutate(`x27n_emergency_other` = as.character(`x27n_emergency_other`))
+
+# Palau
+hhs_palau <- read_csv(here::here("raw_data", "hhs", "hhs_palau_raw.csv")) %>%
+  clean_names()
 
 ```
 
@@ -65,7 +68,8 @@ hhs_indonesia_converted <- hhs_indonesia %>%
 
 hhs_honduras_converted <- hhs_honduras %>%
   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
-  mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
+  mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware)) %>% 
+  mutate(x70_hh_average_income = as.numeric(x70_hh_average_income))
 
 hhs_micronesia_converted <- hhs_micronesia %>%
   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
@@ -76,9 +80,13 @@ hhs_philippines_converted <- hhs_philippines %>%
   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
   mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
 
-hhs_global <- bind_rows(list(hhs_brazil, hhs_honduras_converted, hhs_indonesia_converted, hhs_micronesia_converted, hhs_mozambique, hhs_philippines_converted))
+hhs_palau_converted <- hhs_palau %>%
+  mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
+  mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware)) 
 
-write_csv(hhs_global, "hhs_global.csv", append = FALSE)
+hhs_global <- bind_rows(list(hhs_brazil, hhs_honduras_converted, hhs_indonesia_converted, hhs_micronesia_converted, hhs_mozambique, hhs_philippines_converted, hhs_palau_converted))
+
+#write_csv(hhs_global, "hhs_global.csv", append = FALSE)
 
 ```
 
@@ -88,58 +96,60 @@ write_csv(hhs_global, "hhs_global.csv", append = FALSE)
 
 ***
 
-<div align="left"> <font size="+3"> **Unique Answers per Question** </font>
+
 
 ```{r}
- #create unique function by question
-unique_qs <- function(hhs_global, question){
-  
-  question <- hhs_global %>% 
-  group_by(country) %>%
-  distinct(question) %>% 
-  select(question) %>% 
-  arrange(country, -question)
+#<div align="left"> <font size="+3"> **Unique Answers per Question** </font>
 
-question_table <- knitr::kable(question, format = "html", caption = "question") %>% 
-  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
-  collapse_rows(columns = 1, valign = "middle")
-
-return(question_table)
-
-}
-
-### create vector for loop
-question <- hhs_global$(x43_ma_benefits, x43_ma_benefits_opinion)
-
-### create loop 
-for (i in seq_along(question)) {
-  unique_qs(hhs_global, question[i])
-}
-
-
-
-x10_mpa_important
-
-x43_ma_benefits <- hhs_global %>% 
-  group_by(country, distinct(x43_ma_benefits)) %>%
-  distinct(x43_ma_benefits) %>% 
-  select(x43_ma_benefits) %>% 
-  arrange(country, -x43_ma_benefits)
-
-knitr::kable(x43_ma_benefits, format = "html", caption = "x43_ma_benefits") %>% 
-  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
-  collapse_rows(columns = 1, valign = "middle")
-
-x43_ma_benefits_opinion <- hhs_global %>% 
-  group_by(country) %>%
-  distinct(x43_ma_benefits_opinion) %>% 
-  select(x43_ma_benefits_opinion) %>% 
-  arrange(country, x43_ma_benefits_opinion)
-
-knitr::kable(x43_ma_benefits_opinion, format = "html", caption = "x43_ma_benefits_opinion") %>% 
-  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
-  collapse_rows(columns = 1, valign = "middle")
-
+#create unique function by question
+# unique_qs <- function(hhs_global, question){
+#   
+#   question <- hhs_global %>% 
+#   group_by(country) %>%
+#   distinct(question) %>% 
+#   select(question) %>% 
+#   arrange(country, -question)
+# 
+# question_table <- knitr::kable(question, format = "html", caption = "question") %>% 
+#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+#   collapse_rows(columns = 1, valign = "middle")
+# 
+# return(question_table)
+# 
+# }
+# 
+# ### create vector for loop
+# question <- hhs_global$(x43_ma_benefits, x43_ma_benefits_opinion)
+# 
+# ### create loop 
+# for (i in seq_along(question)) {
+#   unique_qs(hhs_global, question[i])
+# }
+# 
+# 
+# 
+# x10_mpa_important
+# 
+# x43_ma_benefits <- hhs_global %>% 
+#   group_by(country, distinct(x43_ma_benefits)) %>%
+#   distinct(x43_ma_benefits) %>% 
+#   select(x43_ma_benefits) %>% 
+#   arrange(country, -x43_ma_benefits)
+# 
+# knitr::kable(x43_ma_benefits, format = "html", caption = "x43_ma_benefits") %>% 
+#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+#   collapse_rows(columns = 1, valign = "middle")
+# 
+# x43_ma_benefits_opinion <- hhs_global %>% 
+#   group_by(country) %>%
+#   distinct(x43_ma_benefits_opinion) %>% 
+#   select(x43_ma_benefits_opinion) %>% 
+#   arrange(country, x43_ma_benefits_opinion)
+# 
+# knitr::kable(x43_ma_benefits_opinion, format = "html", caption = "x43_ma_benefits_opinion") %>% 
+#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+#   collapse_rows(columns = 1, valign = "middle")
+# 
 
 # 
 # hhs_global_answers <- hhs_global[!duplicated(hhs_global[ , c("x43_ma_benefits", "x43_ma_benefits_opinion", "x49_enforcement_responsible")]), ] %>% 
