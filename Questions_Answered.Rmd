@@ -24,79 +24,24 @@ library(scales)
 
 ```
 
-
-```{r, include = FALSE}
-# Read in the data
-
-# Indonesia
-hhs_indonesia <- read_csv(here::here("raw_data", "hhs", "hhs_indonesia_raw.csv")) %>%
-  clean_names()
-
-# Brazil
-hhs_brazil <- read_csv(here::here("raw_data", "hhs", "hhs_brazil_raw.csv")) %>%
-  clean_names()
-
-# Honduras
-hhs_honduras <- read_csv(here::here("raw_data", "hhs", "hhs_honduras_raw.csv")) %>%
-  clean_names()
-
-# Micronesia
-hhs_micronesia <- read_csv(here::here("raw_data", "hhs", "hhs_micronesia_raw.csv")) %>%
-  clean_names()
-
-# Mozambique
-hhs_mozambique <- read_csv(here::here("raw_data", "hhs", "hhs_mozambique_raw.csv")) %>%
-  clean_names()
-
-# Philippines
-hhs_philippines <- read_csv(here::here("raw_data", "hhs", "hhs_philippines_raw.csv")) %>%
-  clean_names()
-  #mutate(`x27n_emergency_other` = as.character(`x27n_emergency_other`))
-
-```
-
-```{r}
-# Created combined dataframe
-
-## Convert columns that are in "double" or "logical" format to "character" format so that they can be combined with other datasets
-hhs_indonesia_converted <- hhs_indonesia %>%
-  mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
-  mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
-
-hhs_honduras_converted <- hhs_honduras %>%
-  mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
-  mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
-
-hhs_micronesia_converted <- hhs_micronesia %>%
-  mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
-  mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
-
-hhs_philippines_converted <- hhs_philippines %>%
-  mutate(x24p_item_other_specify = as.character(x24p_item_other_specify)) %>% 
-  mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
-  mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
-
-hhs_global <- bind_rows(list(hhs_brazil, hhs_honduras_converted, hhs_indonesia_converted, hhs_micronesia_converted, hhs_mozambique, hhs_philippines_converted))
-
-write_csv(hhs_global, "hhs_global.csv", append = FALSE)
-
-```
-
 <div align="center"> <font size="+3"> **Fish Forever - Summary of HHSs** </font> 
 
 ***
 
-<div align="left"> <font size="+3"> **Engagement** </font>
+```{r, include = FALSE}
+hhs_global <- read_csv("hhs_global.csv")
+```
 
-Questions 44, 45, and 48 not in dataset. 
+
+<div align="left"> <font size="+3"> **Engagement** </font>
 
 ```{r}
 # Check out stats for engagement related questions
 
 ## Create subset of global with only engagement question columns
-# Questions 44, 45, 48 not in data
+
 hhs_global_engagement <- hhs_global %>% 
-  select(c(x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior))
+  select(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior))
 
   ## Create summary dataframe of engagement questions - % of surveys with question answered
 engagement_sums <- colSums(is.na(hhs_global_engagement)) %>% 
@@ -154,7 +99,7 @@ knitr::kable(agreement_sums, format = "html", caption = "Agreement Questions Bre
 
 <div align="left"> <font size="+3"> **Governance** </font>
 
-Question 4 not in dataset. 
+Question 4 not in dataset - it was a filtering question and responses weren't recorded. 
 
 ```{r}
 # Check out stats for agreement related questions
