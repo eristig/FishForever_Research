@@ -130,12 +130,12 @@ hhs_global <- bind_rows(list(hhs_brazil, hhs_honduras_converted, hhs_indonesia_c
 # 
 # x10_mpa_important
 # 
-# x43_ma_benefits <- hhs_global %>% 
+# x43_ma_benefits <- hhs_global %>%
 #   group_by(country, distinct(x43_ma_benefits)) %>%
-#   distinct(x43_ma_benefits) %>% 
-#   select(x43_ma_benefits) %>% 
+#   distinct(x43_ma_benefits) %>%
+#   select(x43_ma_benefits) %>%
 #   arrange(country, -x43_ma_benefits)
-# 
+
 # knitr::kable(x43_ma_benefits, format = "html", caption = "x43_ma_benefits") %>% 
 #   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
 #   collapse_rows(columns = 1, valign = "middle")
@@ -411,6 +411,7 @@ knitr::kable(philippines_summary, format = "html", caption = "Philippines Data S
 ```
 
 
+TEST
 
 
 
