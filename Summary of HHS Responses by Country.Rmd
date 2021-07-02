@@ -1,0 +1,569 @@
+---
+output: 
+html_document:
+  theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+
+```{r, include = FALSE, echo = FALSE}
+# Load packages
+library(tidyverse)
+library(janitor)
+library(tidyr)
+library(ggplot2)
+library(kableExtra)
+library(knitr)
+library(naniar)
+library(here)
+library(dplyr)
+library(scales)
+
+```
+
+
+```{r, include = FALSE}
+# Read in the data
+
+# Indonesia
+hhs_indonesia <- read_csv(here::here("raw_data", "hhs", "hhs_indonesia_raw.csv")) %>%
+  clean_names()
+
+# Brazil
+hhs_brazil <- read_csv(here::here("raw_data", "hhs", "hhs_brazil_raw.csv")) %>%
+  clean_names()
+
+# Honduras
+hhs_honduras <- read_csv(here::here("raw_data", "hhs", "hhs_honduras_raw.csv")) %>%
+  clean_names()
+
+# Micronesia
+hhs_micronesia <- read_csv(here::here("raw_data", "hhs", "hhs_micronesia_raw.csv")) %>%
+  clean_names()
+
+# Mozambique
+hhs_mozambique <- read_csv(here::here("raw_data", "hhs", "hhs_mozambique_raw.csv")) %>%
+  clean_names()
+
+# Philippines
+hhs_philippines <- read_csv(here::here("raw_data", "hhs", "hhs_philippines_raw.csv")) %>%
+  clean_names()
+
+# Palau
+hhs_palau <- read_csv(here::here("raw_data", "hhs", "hhs_palau_raw.csv")) %>%
+  clean_names()
+
+```
+
+```{r}
+# Created combined dataframe
+
+## Convert columns that are in "double" or "logical" format to "character" format so that they can be combined with other datasets
+# hhs_indonesia_converted <- hhs_indonesia %>%
+#   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
+#   mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
+# 
+# hhs_honduras_converted <- hhs_honduras %>%
+#   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
+#   mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware)) %>% 
+#   mutate(x70_hh_average_income = as.numeric(x70_hh_average_income))
+# 
+# hhs_micronesia_converted <- hhs_micronesia %>%
+#   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
+#   mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
+# 
+# hhs_philippines_converted <- hhs_philippines %>%
+#   mutate(x24p_item_other_specify = as.character(x24p_item_other_specify)) %>% 
+#   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
+#   mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware))
+# 
+# hhs_palau_converted <- hhs_palau %>%
+#   mutate(x27n_emergency_other = as.character(x27n_emergency_other)) %>% 
+#   mutate(x40_reserve_boundaries_aware = as.character(x40_reserve_boundaries_aware)) 
+# 
+# hhs_global <- bind_rows(list(hhs_brazil, hhs_honduras_converted, hhs_indonesia_converted, hhs_micronesia_converted, hhs_mozambique, hhs_philippines_converted, hhs_palau_converted))
+
+#write_csv(hhs_global, "hhs_global.csv", append = FALSE)
+
+```
+
+<div align="center"> <font size="+3"> **Summary of HHS Responses** </font> 
+<div align="center"> <font size="+2"> Country by Country Breakdown </font> 
+
+
+***
+
+
+
+```{r}
+#<div align="left"> <font size="+3"> **Unique Answers per Question** </font>
+
+#create unique function by question
+# unique_qs <- function(hhs_global, question){
+#   
+#   question <- hhs_global %>% 
+#   group_by(country) %>%
+#   distinct(question) %>% 
+#   select(question) %>% 
+#   arrange(country, -question)
+# 
+# question_table <- knitr::kable(question, format = "html", caption = "question") %>% 
+#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+#   collapse_rows(columns = 1, valign = "middle")
+# 
+# return(question_table)
+# 
+# }
+# 
+# ### create vector for loop
+# question <- hhs_global$(x43_ma_benefits, x43_ma_benefits_opinion)
+# 
+# ### create loop 
+# for (i in seq_along(question)) {
+#   unique_qs(hhs_global, question[i])
+# }
+# 
+# 
+# 
+# x10_mpa_important
+# 
+# x43_ma_benefits <- hhs_global %>% 
+#   group_by(country, distinct(x43_ma_benefits)) %>%
+#   distinct(x43_ma_benefits) %>% 
+#   select(x43_ma_benefits) %>% 
+#   arrange(country, -x43_ma_benefits)
+# 
+# knitr::kable(x43_ma_benefits, format = "html", caption = "x43_ma_benefits") %>% 
+#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+#   collapse_rows(columns = 1, valign = "middle")
+# 
+# x43_ma_benefits_opinion <- hhs_global %>% 
+#   group_by(country) %>%
+#   distinct(x43_ma_benefits_opinion) %>% 
+#   select(x43_ma_benefits_opinion) %>% 
+#   arrange(country, x43_ma_benefits_opinion)
+# 
+# knitr::kable(x43_ma_benefits_opinion, format = "html", caption = "x43_ma_benefits_opinion") %>% 
+#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "left") %>% 
+#   collapse_rows(columns = 1, valign = "middle")
+# 
+
+# 
+# hhs_global_answers <- hhs_global[!duplicated(hhs_global[ , c("x43_ma_benefits", "x43_ma_benefits_opinion", "x49_enforcement_responsible")]), ] %>% 
+#   select(x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible)
+# 
+# hhs_global_answers
+# 
+# , x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x46_represent_interests, x47_represent_contributions
+# 
+#   select(x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x46_represent_interests, x47_represent_contributions) 
+
+```
+
+
+```{r, include = FALSE}
+hhs_global <- read_csv("hhs_global.csv")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Indonesia** </font>
+
+```{r}
+# Summary Survey Data - Location breakdown
+
+## Indonesia
+# Create subset for location breakdown of surveys
+indonesia_summary <- hhs_indonesia %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(indonesia_summary, format = "html", caption = "Indonesia Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(indonesia_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+## Engagement data summary
+# Create subset for engagement relevant questions
+indonesia_engagement <- hhs_indonesia %>%
+  select(c(1:12, x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve)) %>% 
+  drop_na(13, 15:27, 29:30) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(indonesia_engagement, format = "html", caption = "Indonesia Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(indonesia_engagement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+# Create subset for engagement relevant questions
+indonesia_agreement <- hhs_indonesia %>%
+  select(c(1:12, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+  drop_na(13:17, 19:31, 33) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(indonesia_agreement, format = "html", caption = "Indonesia Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(indonesia_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+```
+
+***
+
+<div align="left"> <font size="+3"> **Brazil** </font>
+
+```{r}
+# Summary Survey Data - Location breakdown
+
+## Brazil
+# Create subset for location breakdown of surveys
+brazil_summary <- hhs_brazil %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(brazil_summary, format = "html", caption = "Brazil Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(brazil_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+## Engagement data summary
+# Create subset for engagement relevant questions
+brazil_engagement <- hhs_brazil %>%
+  select(c(1:12, x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve)) %>% 
+  drop_na(13, 15:27, 29:30) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(brazil_engagement, format = "html", caption = "Brazil Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(brazil_engagement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+# Create subset for engagement relevant questions
+brazil_agreement <- hhs_brazil %>%
+  select(c(1:12, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+  drop_na(13:17, 19:31, 33) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(brazil_agreement, format = "html", caption = "Brazil Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(brazil_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Honduras** </font>
+
+```{r}
+## Honduras
+# Create subset for location breakdown of surveys
+honduras_summary <- hhs_honduras %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(honduras_summary, format = "html", caption = "Honduras Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(honduras_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+## Engagement data summary
+# Create subset for engagement relevant questions
+honduras_engagement <- hhs_honduras %>%
+  select(c(1:12, x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve)) %>% 
+  drop_na(13, 15:27, 29:30) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(honduras_engagement, format = "html", caption = "Honduras Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(honduras_engagement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+# Create subset for engagement relevant questions
+honduras_agreement <- hhs_honduras %>%
+  select(c(1:12, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+  drop_na(13:17, 19:31, 33) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(honduras_agreement, format = "html", caption = "Honduras Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(honduras_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Micronesia** </font>
+
+```{r}
+## Micronesia
+# Create subset for location breakdown of surveys
+micronesia_summary <- hhs_micronesia %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(micronesia_summary, format = "html", caption = "Micronesia Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(micronesia_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+## Engagement data summary
+# Create subset for engagement relevant questions
+micronesia_engagement <- hhs_micronesia %>%
+  select(c(1:12, x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve)) %>% 
+  drop_na(13, 15:27, 29:30) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(micronesia_engagement, format = "html", caption = "Micronesia Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(micronesia_engagement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+# Create subset for engagement relevant questions
+micronesia_agreement <- hhs_micronesia %>%
+  select(c(1:12, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+  drop_na(13:17, 19:31, 33) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(micronesia_agreement, format = "html", caption = "Micronesia Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(micronesia_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Mozambique** </font>
+
+```{r}
+## Mozambique
+# Create subset for location breakdown of surveys
+mozambique_summary <- hhs_mozambique %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(mozambique_summary, format = "html", caption = "Mozambique Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(mozambique_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+## Engagement data summary
+# Create subset for engagement relevant questions
+mozambique_engagement <- hhs_mozambique %>%
+  select(c(1:12, x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve)) %>% 
+  drop_na(13, 15:27, 29:30) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(mozambique_engagement, format = "html", caption = "Mozambique Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(mozambique_engagement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+# Create subset for engagement relevant questions
+mozambique_agreement <- hhs_mozambique %>%
+  select(c(1:12, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+  drop_na(13:17, 19:31, 33) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(mozambique_agreement, format = "html", caption = "Mozambique Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(mozambique_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+***
+
+<div align="left"> <font size="+3"> **Philippines** </font>
+
+```{r}
+## Philippines
+# Create subset for location breakdown of surveys
+philippines_summary <- hhs_philippines %>% 
+  count(level1_name, level2_name, level3_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Subnational Government" = level1_name)
+  
+  # Create location breakdown table
+knitr::kable(philippines_summary, format = "html", caption = "Philippines Data Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(philippines_summary)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+## Engagement data summary
+# Create subset for engagement relevant questions
+philippines_engagement <- hhs_philippines %>%
+  select(c(1:12, x43_ma_benefits, x43_ma_benefits_opinion, x49_enforcement_responsible, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x62_reserve_compliance, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve, x66_response_fishing_reserve, x66_reaction_fishing_reserve)) %>% 
+  drop_na(13, 15:27, 29:30) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(philippines_engagement, format = "html", caption = "Philippines Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(philippines_engagement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+# Create subset for engagement relevant questions
+philippines_agreement <- hhs_philippines %>%
+  select(c(1:12, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+  drop_na(13:17, 19:31, 33) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(philippines_agreement, format = "html", caption = "Philippines Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(philippines_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
