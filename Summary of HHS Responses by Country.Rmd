@@ -56,6 +56,8 @@ hhs_philippines <- read_csv(here::here("raw_data", "hhs", "hhs_philippines_raw.c
 hhs_palau <- read_csv(here::here("raw_data", "hhs", "hhs_palau_raw.csv")) %>%
   clean_names()
 
+hhs_indonesia_new <- read_csv("hh_surveys_all.csv")
+
 ```
 
 ```{r}
