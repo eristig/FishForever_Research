@@ -1,0 +1,32 @@
+---
+title: "Wrangling updated data from Rare portal"
+author: "Larissa Neilson"
+date: "7/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(compareDF)
+```
+
+```{r}
+# Read in new .csv from Rare portal
+hhs_global <- read_csv("hhs_global.csv")
+hhs_all <- read_csv("hh_surveys_all.csv")
+```
+
+```{r}
+# How many reserves (75)
+unique(hhs_all$ma_name)
+
+# Get list of all reserves by country
+summary <- hhs_all %>% 
+  count(country, level1_name, level2_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(country, n, sum)) %>% 
+  adorn_totals("row")
+```
+
