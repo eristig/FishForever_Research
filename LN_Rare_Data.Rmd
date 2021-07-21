@@ -1,5 +1,5 @@
 ---
-title: "Wrangling updated data from Rare portal"
+title: "Wrangling data from the new Rare data portal"
 author: "Larissa Neilson"
 date: "7/19/2021"
 output: html_document
@@ -8,25 +8,41 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(here)
 library(janitor)
 library(compareDF)
 ```
 
 ```{r}
-# Read in new .csv from Rare portal
+# Read in Erin's .csv
 hhs_global <- read_csv("hhs_global.csv")
-hhs_all <- read_csv("hh_surveys_all.csv")
+
+# Read in .csv from new Rare data portal
+hhs_all <- read_csv(here("new_portal_data", "hh_surveys_all.csv"))
+
+# Read in separate question .csvs from the new Rare data portal
+hhs_q7 <- read_csv(here("new_portal_data", "hh_q7.csv"))
+hhs_q14 <- read_csv(here("new_portal_data", "hh_q14.csv")) 
+hhs_q15 <- read_csv(here("new_portal_data", "hh_q15.csv"))
+hhs_q44 <- read_csv(here("new_portal_data", "hh_q44.csv")) ##
+hhs_q45 <- read_csv(here("new_portal_data", "hh_q45.csv")) ##
+hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv")) ##
+hhs_q69 <- read_csv(here("new_portal_data", "hh_q69.csv"))
 ```
 
 ```{r}
-# How many reserves (75)
-unique(hhs_all$ma_name)
-
 # Get list of all reserves by country
 summary <- hhs_all %>% 
   count(country, level1_name, level2_name, ma_name) %>% 
   #arrange(-n) %>% 
   mutate(level1_name = fct_reorder(country, n, sum)) %>% 
   adorn_totals("row")
+
+# How many reserves total
+tot_reserves <- hhs_all %>%
+  group_by(country, level1_name, level2_name, ma_name) %>%
+  count(ma_name)
+
+# There are 75 "managed access areas" and 77 "level 2 names" (aka reserves?)
 ```
 
