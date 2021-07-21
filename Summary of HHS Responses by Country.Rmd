@@ -90,7 +90,7 @@ hhs_palau <- read_csv(here::here("raw_data", "hhs", "hhs_palau_raw.csv")) %>%
 
 ```
 
-<div align="center"> <font size="+3"> **Summary of HHS Responses** </font> 
+<div align="center"> <font size="+4"> **Summary of HHS Responses** </font> 
 <div align="center"> <font size="+2"> Country by Country Breakdown </font> 
 
 
