@@ -90,7 +90,7 @@ hhs_palau <- read_csv(here::here("raw_data", "hhs", "hhs_palau_raw.csv")) %>%
 
 ```
 
-<div align="center"> <font size="+4"> **Summary of HHS Responses** </font> 
+<div align="left"> <font size="+3"> **Summary of HHS Responses** </font> 
 <div align="center"> <font size="+2"> Country by Country Breakdown </font> 
 
 
@@ -439,6 +439,7 @@ knitr::kable(mozambique_summary, format = "html", caption = "Mozambique Data Sum
   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
   collapse_rows(columns = 1, valign = "middle")
 
+
 ## Engagement data summary
 # Create subset for engagement relevant questions
 mozambique_engagement <- hhs_mozambique %>%
@@ -520,7 +521,9 @@ knitr::kable(philippines_engagement, format = "html", caption = "Philippines Sur
   collapse_rows(columns = 1, valign = "middle")
 
 ## Agreement data summary
-# Create subset for engagement relevant questions
+### Here we include MORE than the actual amount of agreement-related questions. These include Qs 30 and 31, regarding social capital and trust (of their communities to respect the rules)
+
+# Create subset for engagement relevant questions [DG: I changed this, so the final version is down below!]
 philippines_agreement <- hhs_philippines %>%
   select(c(1:12, x10_mpa_important, x30_trust_fishers_community, x30_trust_fishers_other, x31_my_community_ability, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61e_violations_decrease_profit, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x61h_individual_behavior, x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
   drop_na(13:17, 19:31, 33) %>% 
@@ -540,6 +543,329 @@ knitr::kable(philippines_agreement, format = "html", caption = "Philippines Surv
 ```
 
 
+#### Dylan explores PCA with current survey responses
+
+First, I'll look at what df we could responsibly normalize for a PCA
+
+
+So, what df are there?
+
+
+I'm playing with the Phillipines df to see if we can can a >0 total for responses that answered all the agreement questions
+```{r}
+
+
+philippines_agreement_dg <- hhs_philippines %>%
+  select(c(1:12, x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations,  x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+ drop_na(13, 14, 16:21, 23) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+```
+
+
+Yahoo!! I did several iterations of drop_na() and selecting variables. 
+
+
+ When we only select the **Agreement** questions  we see some really high numbers. 61(a) ws dragging this number down significantly, so I 
+From there, once I have a strong df from 'The Phils' called "philippines_agreement_dg"  
+
+
+##### Here is the finalized table for the Philippines Agreement questions
+
+```{r}
+knitr::kable(philippines_agreement_dg, format = "html", caption = "Philippines Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(philippines_agreement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+##### I'll copy this agreement process (filtering and making tables) for each country
+
+
+Up next, mozambique: 
+
+
+```{r}
+mozambique_agreement_dg <- hhs_mozambique %>%
+  select(c(1:12, x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations,  x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+ drop_na(13, 14, 16:21, 23) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+```
+
+
+##### Edited table for Mozambique Agreement
+
+```{r}
+knitr::kable(mozambique_agreement_dg, format = "html", caption = "Mozambique Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(mozambique_agreement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+##### New Agreement methods + Table for Micronesia
+
+```{r}
+micronesia_agreement_dg <- hhs_micronesia %>%
+  select(c(1:12, x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations,  x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+ drop_na(13, 14, 16:21, 23) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create Agreement questions breakdown table
+knitr::kable(micronesia_agreement_dg, format = "html", caption = "Micronesia Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(micronesia_agreement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+
+##### Edited Agreement Method + Table for *Indonesia*
+**This edit is the only one that is NOT final**
+```{r}
+indonesia_agreement_dg <- hhs_indonesia %>%
+  select(c(1:12, x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations,  x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+ drop_na(13, 14, 18, 19, 21, 23) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+## Here, two questions have high NAs, bringing down totals significantly:
+## 1. "x46_represent_interests"
+## 2. "x47_represent_contributions" 
+## When both are included: 130 observations. 
+## removing x47 gives us 132, and removing x46 gives us 135
+## Remove both, and we have 2358. Why?? 
+
+
+# # Create agreement questions breakdown table
+knitr::kable(indonesia_agreement_dg, format = "html", caption = "Indonesia Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(indonesia_agreement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+
+##### Honduras with Edited Agreement
+
+```{r}
+honduras_agreement_dg <- hhs_honduras %>%
+ select(c(1:12, x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations,  x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+ drop_na(13, 14, 16:21, 23) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+
+# # Create engagement questions breakdown table
+knitr::kable(honduras_agreement_dg, format = "html", caption = "Honduras Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(honduras_agreement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+
+##### Agreement [edited] method + Table for Brazil
+
+```{r}
+brazil_agreement_dg <- hhs_brazil %>%
+  select(c(1:12, x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations,  x63_fishing_in_reserve, x63_times_fishing_reserve, x64_wrong_fishing_reserve)) %>% 
+  drop_na( 16:21, 23) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(brazil_agreement, format = "html", caption = "Brazil Surveys - Agreement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(brazil_agreement)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+
+OK! Here we have re-done all the *agreement* tables. From here, I'll do the same for engagement. I'll then hide the previous code bits in the adapted Rmd. Today, I'll also try to recode 0s and 1s. 
+
+NOTE TO DYL: Still need to go over Indonesia numbers with TQ. 
+
+
+#### Rehsaping Engagement
+##### Goal: Retain a robust set of answered questions, and increase N to several thousand. 
+
+
+Let's start with the Philippines again
+
+```{r}
+philippines_engagement_dg <- hhs_philippines %>% 
+  select(c(1:12, x44_meeting_attendance, x45_leadership_position, x49_enforcement_responsible, x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior)) %>% 
+  drop_na(13:18) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  # mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(philippines_engagement_dg, format = "html", caption = "Philippines Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(philippines_engagement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+## Agreement data summary
+### Here we include MORE than the actual amount of engagement-related questions. These include Qs 30 and 31, regarding social capital and trust (of their communities to respect the rules) 
+```
+
+That was a solid edit! Removed a host fo questions. BUT we still ahve Erin's old tables, to look at what questions we may want to add back. 
+
+Now let's do the rest of the countries. 
+
+##### Edited Engagement: Mozambique
+
+```{r}
+mozambique_engagement_dg <-  hhs_mozambique %>%
+  select(c(1:12, x44_meeting_attendance, x45_leadership_position, x49_enforcement_responsible, x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior)) %>% 
+  drop_na(13:18) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  # mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(mozambique_engagement_dg, format = "html", caption = "Mozambique Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(mozambique_engagement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+
+Done, this went from 0 --> 1077 observations.
+
+Here comes Micronesia (it's like the olympics)
+
+```{r}
+micronesia_engagement_dg <- hhs_micronesia %>%  
+  select(c(1:12, x44_meeting_attendance, x45_leadership_position, x49_enforcement_responsible, x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior)) %>% 
+  drop_na(13:18) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  # mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(micronesia_engagement_dg, format = "html", caption = "Mozambique Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(micronesia_engagement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
+
+Again, we start with 0 responses, and now have 1300
+
+##### Edited Engagement for **Indonesia**
+
+```{r}
+indonesia_engagement_dg <- hhs_indonesia %>%
+  select(c(1:12, x44_meeting_attendance, x45_leadership_position, x49_enforcement_responsible,  x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior)) %>% 
+  drop_na(15:18) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  # mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+## This df is with 44 and 45 [REDACTED]
+
+
+# # Create engagement questions breakdown table
+knitr::kable(indonesia_engagement_dg, format = "html", caption = "Mozambique Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(indonesia_engagement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+  
+```
+
+OK, with indo, we once again have some edits to make
+44 and 45 have a TON of NAs. Was Indonesia further behind implementation when this survey was done? 
+OR - do folks there really not engage with the rules. 
+
+Anyway - on to the next 
+
+##### Edited Engagement for: **Honduras**
+
+
+```{r}
+honduras_engagement_dg <- hhs_honduras %>%
+  select(c(1:12, x44_meeting_attendance, x45_leadership_position, x49_enforcement_responsible,  x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior)) %>% 
+  drop_na(13:18) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  # mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(honduras_engagement_dg, format = "html", caption = "Mozambique Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(honduras_engagement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+```
+
+
+One more!
+
+##### Edited Engagement for **Brazil**
+
+```{r}
+
+brazil_engagement_dg <- hhs_brazil %>%
+  select(c(1:12, x44_meeting_attendance, x45_leadership_position, x49_enforcement_responsible,  x53_encourage_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior)) 
+  drop_na(15:18) %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  # mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Engagement' questions answered" = n)
+
+# # Create engagement questions breakdown table
+knitr::kable(honduras_engagement_dg, format = "html", caption = "Mozambique Surveys - Engagement Questions") %>%
+  #column_spec(1, italic = TRUE) %>%
+  row_spec(dim(honduras_engagement_dg)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+```
 
 
 
@@ -548,16 +874,25 @@ knitr::kable(philippines_agreement, format = "html", caption = "Philippines Surv
 
 
 
+#### Switching variables to 1s and 0s
+
+Problem: There is uneven coding for a lot of questions. 
+Particularly where answers are "Yes," "No," "No Answer," or "NA" 
+This is further mixed up by answers that add gender specifics. It's a mess, kinda. 
+
+We'll play with a few variables -n `hhs_mozambique`
+```{r}
+View(hhs_mozambique)
+
+hhs_mozambique_nb <- hhs_mozambique %>% 
+  select(x44_meeting_attendance)  
+   mutate(
+     x44_meeting_attendance = ifelse(
+     x44_meeting_attendance == "Yes male", "yes"))
+  
 
 
-
-
-
-
-
-
-
-
+```
 
 
 
