@@ -21,6 +21,7 @@ library(naniar)
 library(here)
 library(dplyr)
 library(scales)
+library(stringr)
 
 ```
 
@@ -817,6 +818,11 @@ OK, with indo, we once again have some edits to make
 44 and 45 have a TON of NAs. Was Indonesia further behind implementation when this survey was done? 
 OR - do folks there really not engage with the rules. 
 
+
+##### Notes with TQ
+Non-answer = NO
+
+
 Anyway - on to the next 
 
 ##### Edited Engagement for: **Honduras**
@@ -881,14 +887,33 @@ Particularly where answers are "Yes," "No," "No Answer," or "NA"
 This is further mixed up by answers that add gender specifics. It's a mess, kinda. 
 
 We'll play with a few variables -n `hhs_mozambique`
+The df here aren't anything final, rather they jsut show HOW we can use stringR to change the names of observations. 
 ```{r}
 View(hhs_mozambique)
 
+
+
 hhs_mozambique_nb <- hhs_mozambique %>% 
-  select(x44_meeting_attendance)  
-   mutate(
-     x44_meeting_attendance = ifelse(
-     x44_meeting_attendance == "Yes male", "yes"))
+  select(x44_meeting_attendance) %>% 
+  mutate(x44_meeting_attendance = 
+           str_replace(x44_meeting_attendance,
+    pattern = "Yes male", replacement = "yes")) %>% 
+      mutate(x44_meeting_attendance =
+    str_replace(x44_meeting_attendance,
+                pattern = "Yes female", replacement = "yes")) %>%
+  mutate(x44_meeting_attendance =
+    str_replace(x44_meeting_attendance,
+                pattern = "No", replacement = "no")) %>% 
+  mutate(x44_meeting_attendance = 
+           str_replace(x44_meeting_attendance,
+    pattern = "not sure", replacement = "no")) %>% 
+  mutate(x44_meeting_attendance = 
+           str_replace(x44_meeting_attendance,
+    pattern = "No", replacement = "no"))
+  
+  
+  
+  
   
 
 
