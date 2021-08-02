@@ -894,7 +894,8 @@ View(hhs_mozambique)
 
 
 hhs_mozambique_nb <- hhs_mozambique %>% 
-  select(x44_meeting_attendance) %>% 
+  select(x44_meeting_attendance, x45_leadership_position) %>% 
+  mutate_at(c(1:2), ~replace(., is.na(.), 0)) %>% 
   mutate(x44_meeting_attendance = 
            str_replace(x44_meeting_attendance,
     pattern = "Yes male", replacement = "yes")) %>% 
@@ -909,20 +910,195 @@ hhs_mozambique_nb <- hhs_mozambique %>%
     pattern = "not sure", replacement = "no")) %>% 
   mutate(x44_meeting_attendance = 
            str_replace(x44_meeting_attendance,
-    pattern = "No", replacement = "no"))
+    pattern = "No", replacement = "no")) %>%
+  mutate(x44_meeting_attendance = ifelse(x44_meeting_attendance == "no",0,1)) %>% 
+  mutate(x45_leadership_position = 
+           str_replace(x45_leadership_position,
+    pattern = "Yes male", replacement = "yes")) %>% 
+      mutate(x45_leadership_position =
+    str_replace(x45_leadership_position,
+                pattern = "Yes female", replacement = "yes")) %>%
+  mutate(x45_leadership_position =
+    str_replace(x45_leadership_position,
+                pattern = "No", replacement = "no")) %>% 
+  mutate(x45_leadership_position = 
+           str_replace(x45_leadership_position,
+    pattern = "not sure", replacement = "no")) %>% 
+  mutate(x45_leadership_position = 
+           str_replace(x45_leadership_position,
+    pattern = "No", replacement = "no")) %>%
+  mutate(x45_leadership_position = ifelse(x45_leadership_position == "no",0,1))
   
   
   
+```
+
+
+Now, we're going to take hhs_global, include all the **supporting** questions, and "filter for" the Engagement and Agreement Questions (which will mean using drop_na)
+
+
+```{r}
+global_filtered <- hhs_global %>%
+  select(c(1:12, x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation,  x53_encourage_regulations, x61f_rights_distribution_fair, x61h_individual_behavior,
+           x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61e_violations_decrease_profit, x62_reserve_compliance, x64_wrong_fishing_reserve,
+x7_gender, 
+x11a_income_farming, x11a_months_farming, x11b_income_harvesting, x11b_months_harvesting, x11c_income_fishing_artisanal,  x11c_months_fishing_artisanal, x11d_income_fishing_industrial,
+x11d_months_fishing_industrial, x11e_income_buying_trading, x11e_months_buying_trading, x11f_income_processing, x11f_months_processing, x11g_income_aquaculture, x11g_months_aquaculture, x11h_income_extraction,
+x11h_months_extraction, x11i_income_tourism, x11i_months_tourism,   x11j_income_other_wage, x11j_months_other_wage, x11k_income_other,
+x11k_months_other, x11k_other_source, 
+x12a_fishing_men, x12b_fishing_women, x12c_fishing_children, 
+x19_current_fish_catch, 
+x22_catch_5yrs,                   
+x23_job_secure, 
+x30_trust_community,x30_trust_community_neighbors, x30_trust_fishers_community,
+x30_trust_fishers_other, x30_trust_local_decision,
+x30_trust_ngo, x30_trust_regional_decision, x30_trust_religious_leaders,
+x30_trust_village_alert, x31_my_community_ability,
+x38_reserve_fishing_allowed, 
+x39_ma_boundaries_aware, 
+x40_reserve_boundaries_aware,
+x49_enforcement_responsible,
+x50_ma_punishment,
+x51a_fishers_gear_not_permitted, x51b_fishers_reserves, 
+x51c_fishers_ma_area, x51d_fishers_violate_fish_size, x51e_fishers_caught,
+x55_worry_food, x55_worry_food,
+x56_reduce_meal_size_adult,  
+x60_hh_fish_consumption,
+x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, 
+x61h_individual_behavior,
+x61i_help_neighbors,
+x66_reaction_fishing_reserve, x66_response_fishing_reserve)) %>% 
+ mutate_at(c(13:14), ~replace(., is.na(.), 0)) %>% 
   
-  
+## x44_meeting_attendance - x61g_fishing_change_behavior = Engagement questions (col 13:18)
+  ## x10_mpa_important - x64_wrong fishing_reserve = Agreement Questions (col 19:29)
+  ## From there, I add the "supporting questions" - these do not get drop_na() 'filter' (col 30:91)
+  drop_na(13:18, 19, 20, 22:24, 25, 28, 29)
+  #While dropping NAs, I ran a pseudo-sensitivity analysis, and questions 61a and 63, wildly decrease the sample size.
+```
+
+ *For Questions 44 and 45* 
+ Iused mutate_at() to change NAs to 0s. right now it may looks weird, but soon it will all be zeroes and ones. These were only asked to "fisher households" and reduce N a lot. They pair with Questions 46 and 47 (also only asked to fisher households)
+*For Q 46-47* we've excluded NAs since they mostly represent "non-fisher households" The difference in n goes from 5640 to ~3300. We want to see how *fishers* comply though. So the smaller N will show us that. 
+
+
+
+
+Let's get a quick `count` table of this data
+
+Here is Global Counts for Filtered A/E data
+```{r}
+
+
+global_filtered_count <- global_filtered %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
+
+
+
 
 
 ```
 
 
+##### Coding values to survey Answers
+
+
+I'll start reassigning 0s and 1 to all the binary Questions
+**This is not final** I'm exploring the methods to do this in code, next week Tasha and I will decide the actual valuation of each piece. 
+
+
+Let me list out which A and E questions have binary responses, if the majority of these have "neither agree nor disagree," then I'll move from -1 to 1, with a neutral option. 
+
+
+###### Engagement
+
+Apologies for listing these so many times, that will change in the final Rmd. 
+
+- 44: Yes/No 1/-1 (We recoded not sure to No, see Methods)
+- 45: Yes/No 1/-1 (We recoded 'Not sure to No, see Methods)
+- 48: Yes/No/  No enforcement 1/0/-1 
+- 53: Very Often - Never, community has no fishing regulations [Flag for this being its own index]
+- 61 (f): Likert Scale (Strongly) Agree-Disagree 
+- 61 (g): Likert Scale (Strongly) Agree-Disagree
+
+IS there a standard for emasurign Qs against on another? Should we have our eyes out for some danger in making this index? Any ideas what could happen? 
+IS -1 to 1 reasonable? What about using the likerts 
+
+Not sure --> No. we ahve the rationale that engagement would 
+"compress often and very often? 0.5 and 1?" 
+generally deal with issue of likert scale, using ordinal but not implying that "very often" is 2x good. 
+
+Watch allison ordinal 
+
+
+###### Agreement
+
+- 10: Yes/No/Neutral 1,0,-1
+- 43: Yes/No: 1, -1 (was there an Unsure answer here?)
+- 46: Agree/Neutral/Disagree: 1, 0. -1
+- 47: Agree/Neutral/Disagree: 1, 0. -1
+- 52: Yes, No, Unsure: 1, 0,-1
+- 61(a): Likert Scale (Strongly) Agree-Disagree
+- 61(e): Likert Scale (Strongly) Agree-Disagree
+- 62: Belief that fish catch will... Go up, Go down, remain the same, unsure. 1, 0, -1
+- 64:  
+
+For 64, which one is included, is 63 included? 
 
 
 
+I'll start converting the "easy" questions to 1s and 0s. 
+
+**Because there was smuch much dang coding in the global_filtered, I'll make a new dataframe for the numbered version. 
+
+We'll call it **global_filtered_numeric**
+
+
+```{r}
+global_filtered_numeric <- global_filtered %>%
+  mutate_at(c(1:2), ~replace(., is.na(.), 0)) %>% 
+  mutate(x44_meeting_attendance = 
+           str_replace(x44_meeting_attendance,
+    pattern = "Yes male", replacement = "yes")) %>% 
+      mutate(x44_meeting_attendance =
+    str_replace(x44_meeting_attendance,
+                pattern = "Yes female", replacement = "yes")) %>%
+  mutate(x44_meeting_attendance =
+    str_replace(x44_meeting_attendance,
+                pattern = "No", replacement = "no")) %>% 
+  mutate(x44_meeting_attendance = 
+           str_replace(x44_meeting_attendance,
+    pattern = "not sure", replacement = "no")) %>% 
+  mutate(x44_meeting_attendance = 
+           str_replace(x44_meeting_attendance,
+    pattern = "No", replacement = "no")) %>%
+  mutate(x44_meeting_attendance = ifelse(x44_meeting_attendance == "no",0,1)) %>% 
+  mutate(x45_leadership_position = 
+           str_replace(x45_leadership_position,
+    pattern = "Yes male", replacement = "yes")) %>% 
+      mutate(x45_leadership_position =
+    str_replace(x45_leadership_position,
+                pattern = "Yes female", replacement = "yes")) %>%
+  mutate(x45_leadership_position =
+    str_replace(x45_leadership_position,
+                pattern = "No", replacement = "no")) %>% 
+  mutate(x45_leadership_position = 
+           str_replace(x45_leadership_position,
+    pattern = "not sure", replacement = "no")) %>% 
+  mutate(x45_leadership_position = 
+           str_replace(x45_leadership_position,
+    pattern = "No", replacement = "no")) %>%
+  mutate(x45_leadership_position = ifelse(x45_leadership_position == "no",0,1)) %>%
+  mutate(x10_mpa_important = 
+           str_replace(x10_mpa_important,
+    pattern = "Yes male", replacement = "yes")) %>% 
+
+```
 
 
 
