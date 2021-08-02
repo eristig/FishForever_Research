@@ -45,6 +45,8 @@ hhs_all_48 <- right_join(hhs_q48, hhs_all, by = "submissionid")
 hhs_all_45 <- right_join(hhs_q45, hhs_all_48, by = "submissionid")
 
 hhs_all_complete <- right_join(hhs_q44, hhs_all_45, by = "submissionid")
+
+write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
 ```
 
 ```{r}
