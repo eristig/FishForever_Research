@@ -40,22 +40,21 @@ summary <- hhs_all %>%
 
 ```{r}
 # Join hhs_all with questions 44, 45, and 48 using `submission_id` column
-hhs_all_48 <- right_join(hhs_q48, hhs_all, by = "submissionid")
+#hhs_all_48 <- right_join(hhs_q48, hhs_all, by = "submissionid")
 
-hhs_all_45 <- right_join(hhs_q45, hhs_all_48, by = "submissionid")
+#hhs_all_45 <- right_join(hhs_q45, hhs_all_48, by = "submissionid")
 
-hhs_all_complete <- right_join(hhs_q44, hhs_all_45, by = "submissionid")
+#hhs_all_complete <- right_join(hhs_q44, hhs_all_45, by = "submissionid")
 
-write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
+#write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
+
+# No need to run the above code again, I have already written a .csv with the joined datasets
+hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
 ```
 
 ```{r}
 # Checks to see which submissionid's are duplicated and how many times. Basically gives us an idea of how many ppl gave multiple answers for questions 44, 45, and/or 48.
 dupes <- data.frame(table(hhs_all_complete$submissionid))
 ```
-
-
-
-
 
 
