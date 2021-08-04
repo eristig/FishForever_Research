@@ -1,0 +1,60 @@
+---
+title: "Exploring updated Rare data"
+author: "Larissa Neilson"
+date: "7/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+```{r}
+# Read in .csv from new Rare data portal
+hhs_all <- read_csv(here("new_portal_data", "hh_surveys_all.csv"))
+
+# Read in separate question .csvs from the new Rare data portal
+#hhs_q7 <- read_csv(here("new_portal_data", "hh_q7.csv"))
+#hhs_q14 <- read_csv(here("new_portal_data", "hh_q14.csv")) 
+#hhs_q15 <- read_csv(here("new_portal_data", "hh_q15.csv"))
+hhs_q44 <- read_csv(here("new_portal_data", "hh_q44.csv")) ##
+hhs_q45 <- read_csv(here("new_portal_data", "hh_q45.csv")) ##
+hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv")) ##
+#hhs_q69 <- read_csv(here("new_portal_data", "hh_q69.csv"))
+```
+
+```{r}
+# Get list of all reserves by country & how many HH surveys were answered
+summary <- hhs_all %>% 
+  count(country, level1_name, level2_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(country, n, sum)) %>% 
+  adorn_totals("row")
+
+# Summary table contains two NA's in the 'ma_name' column
+# Looks like there is 75 reserves
+```
+
+```{r}
+# Join hhs_all with questions 44, 45, and 48 using `submission_id` column
+#hhs_all_48 <- right_join(hhs_q48, hhs_all, by = "submissionid")
+
+#hhs_all_45 <- right_join(hhs_q45, hhs_all_48, by = "submissionid")
+
+#hhs_all_complete <- right_join(hhs_q44, hhs_all_45, by = "submissionid")
+
+#write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
+
+# No need to run the above code again, I have already written a .csv with the joined datasets
+hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
+```
+
+```{r}
+# Checks to see which submissionid's are duplicated and how many times. Basically gives us an idea of how many ppl gave multiple answers for questions 44, 45, and/or 48.
+dupes <- data.frame(table(hhs_all_complete$submissionid))
+```
+
+
