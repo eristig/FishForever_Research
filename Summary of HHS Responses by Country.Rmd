@@ -1094,9 +1094,43 @@ global_filtered_numeric <- global_filtered %>%
            str_replace(x45_leadership_position,
     pattern = "No", replacement = "no")) %>%
   mutate(x45_leadership_position = ifelse(x45_leadership_position == "no",0,1)) %>%
-  mutate(x10_mpa_important = 
-           str_replace(x10_mpa_important,
-    pattern = "Yes male", replacement = "yes")) %>% 
+  mutate(x48_enforcement_participation = 
+           str_replace(x48_enforcement_participation,
+    pattern = "Yes male", replacement = "yes")) %>%
+  mutate(x48_enforcement_participation = 
+           str_replace(x48_enforcement_participation,
+    pattern = "Yes female", replacement = "yes")) %>%
+   mutate(x48_enforcement_participation = 
+           str_replace(x48_enforcement_participation,
+    pattern = "Yes female, Yes male", replacement = "yes")) %>%
+  arrange(x61a_current_regulations)
+
+  # mutate(x48_enforcement_participation = 
+           str_replace(x48_enforcement_participation,
+    pattern = "Yes female, Yes male", replacement = "yes")) %>% 
+  str_replace_all(global_filtered_numeric$conference, 
+                  c("No, No" = "no",
+                    "No, No, No" = "no",
+                    "No, No, No, No" = "no",
+                    "No, No, No, No, No" = "no",
+                    "No, No, No, No, No, No" = "no",
+                    "No, No, No, No, No, No, No, No, No" = "no",
+                    
+                    "Yes male, Yes male, Yes female, Yes female, Yes male, Yes male, Yes female, Yes female" = "yes"))
+
+
+```
+
+Making a reprex
+
+```{r}
+library(tidyverse)
+library(stringr)
+library(reprex)
+
+dfr <- dput(global_filtered_numeric$x48_enforcement_participation [157:169])
+
+dfr
 
 ```
 
