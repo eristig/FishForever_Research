@@ -59,6 +59,24 @@ hhs_palau <- read_csv(here::here("raw_data", "hhs", "hhs_palau_raw.csv")) %>%
 
 ```
 
+###### Updates from 8/4/21
+
+OK, I (Dylan) had a great chat with Larissa Yesterday. 
+She showed me the updated data from Rare, which has a cleaner version of the global hhs data, that she put together really nicely into `hhs_all_complete` 
+
+I'll edit a good amount of this code to mathc this new, cleaner data, but it will all be worth it in the long run (I think...!)
+
+
+With that, I'll jsut create another version of the `hhs_all_complete` called `hhs_portal_complete`
+
+```{r}
+hhs_portal_complete <- read_csv(here("Fisnew_portal_data", "hhs_all_complete.csv"))
+```
+
+
+
+
+
 ```{r}
 # Created combined dataframe
 
