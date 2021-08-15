@@ -1,5 +1,5 @@
 ---
-title: "Exploring updated Rare data"
+title: "Cleaning updated Rare data"
 author: "Larissa Neilson"
 date: "7/19/2021"
 output: html_document
@@ -23,22 +23,14 @@ hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv"))
 ```
 
 ```{r}
-# Get list of all reserves by country & how many HH surveys were answered
-summary <- hhs_all %>% 
-  count(country, level1_name, level2_name, ma_name) %>% 
-  #arrange(-n) %>% 
-  mutate(level1_name = fct_reorder(country, n, sum)) %>% 
-  adorn_totals("row")
+# Check dupes for all questions
+dupes_44 <- data.frame(table(hhs_q44$submissionid)) %>% 
+  rename(submissionid = Var1)
 
-# Summary table contains two NA's in the 'ma_name' column
-# Looks like there is 75 reserves
-```
+dupes_45 <- data.frame(table(hhs_q45$submissionid)) %>% 
+  rename(submissionid = Var1)
 
-```{r}
-# Checks to see which submissionid's are duplicated and how many times. Basically gives us an idea of how many ppl gave multiple answers for questions 44, 45, and/or 48.
-dupes <- data.frame(table(hhs_all_complete$submissionid))
-
-dupes <- data.frame(table(hhs_q44$submissionid)) %>% 
+dupes_48 <- data.frame(table(hhs_q48$submissionid)) %>% 
   rename(submissionid = Var1)
 ```
 
@@ -46,7 +38,7 @@ dupes <- data.frame(table(hhs_q44$submissionid)) %>%
 # Cleaning data
 # Question 44
 hhs_q44_dupes <- hhs_q44 %>% 
-  inner_join(dupes, hhs_q44, by = "submissionid") %>% 
+  inner_join(dupes_44, hhs_q44, by = "submissionid") %>% 
   arrange(desc(submissionid)) 
 
 # Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
@@ -55,42 +47,217 @@ hhs_q44_dupes <- hhs_q44_dupes[!(hhs_q44_dupes$Freq > 1 & hhs_q44_dupes$`44_meet
 # Drops rows that have NA
 hhs_q44_dupes <- hhs_q44_dupes[!(hhs_q44_dupes$`44_meeting_attendance` == "na"),] 
 
-# Changes "No management" option to "No"
+# Changes "No management to "No"
 hhs_q44_dupes <- hhs_q44_dupes %>%
   mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No management" = "No"))
 
-# Probably want to do this last - Freq column here is artifact
+# Probably want to do this last
 hhs_q44_dupes <- hhs_q44_dupes %>%
   group_by(submissionid, Freq) %>%
-  summarise(`44_meeting_attendance` = paste(`44_meeting_attendance`, collapse = ' '))
+  summarise(`44_meeting_attendance` = paste(`44_meeting_attendance`, collapse = ' ')) %>% 
+  select(-Freq)
 
 # Checks to see if there are any dupes left
-hhs_q44_dupes_2 <- data.frame(table(hhs_q44_dupes$submissionid)) #%>% 
+hhs_q44_dupes_2 <- data.frame(table(hhs_q44_dupes$submissionid)) %>% 
   rename(submissionid = Var1)
-  
+
+# Now recode the answer combos into Yes, No, & Not Sure only
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female Yes male" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male No" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No Yes male" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female Yes male No" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female No" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male No Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No No" = "No"))
+```
+
+```{r}
 # Question 45
-  
-# Question 48
-  
+hhs_q45_dupes <- hhs_q45 %>% 
+  inner_join(dupes_45, hhs_q45, by = "submissionid") %>% 
+  arrange(desc(submissionid)) 
+
+# Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
+hhs_q45_dupes <- hhs_q45_dupes[!(hhs_q45_dupes$Freq > 1 & hhs_q45_dupes$`45_leadership_position` == "Not sure"),]
+
+# Drops rows that have NA
+hhs_q45_dupes <- hhs_q45_dupes[!(hhs_q45_dupes$`45_leadership_position` == "na"),] 
+
+# Changes "No management" option to "No"
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No management" = "No"))
+
+# Probably want to do this last - Freq column here is artifact
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  group_by(submissionid, Freq) %>%
+  summarise(`45_leadership_position` = paste(`45_leadership_position`, collapse = ' ')) %>% 
+  select(-Freq)
+
+# Checks to see if there are any dupes left
+hhs_q45_dupes_2 <- data.frame(table(hhs_q45_dupes$submissionid)) %>% 
+  rename(submissionid = Var1)
+
+# Now recode the answer combos into Yes, No, & Not Sure only
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes female" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male Yes female" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes female Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male No" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No Yes female" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes female No" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No No No" = "No"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No No" = "No"))
+```
+
+```{r}
+# Question 48 
+hhs_q48_dupes <- hhs_q48 %>% 
+  inner_join(dupes_48, hhs_q48, by = "submissionid") %>% 
+  arrange(desc(submissionid)) 
+
+# Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
+hhs_q48_dupes <- hhs_q48_dupes[!(hhs_q48_dupes$Freq > 1 & hhs_q48_dupes$`48_enforcement_participation` == "Not sure"),]
+
+# Drops rows that have NA
+hhs_q48_dupes <- hhs_q48_dupes[!(hhs_q48_dupes$`48_enforcement_participation` == "na"),] 
+
+# Changes "No management" option to "No"
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No management" = "No"))
+
+# Change "No enforcement system" and "There is no enforcement system" to "No"
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No enforcement system" = "No"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "There is no enforcement system" = "No"))
+
+# Probably want to do this last - Freq column here is artifact
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  group_by(submissionid, Freq) %>%
+  summarise(`48_enforcement_participation` = paste(`48_enforcement_participation`, collapse = ' ')) %>% 
+  select(-Freq)
+
+# Checks to see if there are any dupes left
+hhs_q48_dupes_2 <- data.frame(table(hhs_q48_dupes$submissionid)) #%>% 
+  #rename(submissionid = Var1)
+
+# Now recode the answer combos into Yes, No, & Not Sure only
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male No" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female No" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No No No" = "No"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No No" = "No"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male No No" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No No Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female Yes female Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female Yes male No" = "Yes"))
 ```
 
 ```{r}
 # Join the datasets after all the cleaning is done
-hhs_all_48 <- left_join(hhs_all, hhs_q48, by = "submissionid")
+hhs_all_48 <- right_join(hhs_q48_dupes, hhs_all, by = "submissionid")
 
-hhs_all_45 <- left_join(hhs_all_48, hhs_q45, by = "submissionid")
+hhs_all_45 <- right_join(hhs_q45_dupes, hhs_all_48, by = "submissionid")
 
-hhs_all_complete <- left_join(hhs_all_45, hhs_q44, by = "submissionid")
+hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_45, by = "submissionid")
 
 #write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
 
 # No need to run the above code again, I have already written a .csv with the joined datasets
-#hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
+
+hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
 ```
 
+```{r}
+# Get list of all reserves by country & how many HH surveys were answered
+summary <- hhs_all_complete %>% 
+  count(country, level1_name, level2_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(country, n, sum)) %>% 
+  adorn_totals("row")
 
-
-
-
-
+# Summary table contains two NA's in the 'ma_name' column
+# 75 reserves if you look at uniques
+```
 
