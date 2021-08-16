@@ -17,13 +17,9 @@ library(janitor)
 hhs_all <- read_csv(here("new_portal_data", "hh_surveys_all.csv"))
 
 # Read in separate question .csvs from the new Rare data portal
-#hhs_q7 <- read_csv(here("new_portal_data", "hh_q7.csv"))
-#hhs_q14 <- read_csv(here("new_portal_data", "hh_q14.csv")) 
-#hhs_q15 <- read_csv(here("new_portal_data", "hh_q15.csv"))
-hhs_q44 <- read_csv(here("new_portal_data", "hh_q44.csv")) ##
-hhs_q45 <- read_csv(here("new_portal_data", "hh_q45.csv")) ##
-hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv")) ##
-#hhs_q69 <- read_csv(here("new_portal_data", "hh_q69.csv"))
+hhs_q44 <- read_csv(here("new_portal_data", "hh_q44.csv"))
+hhs_q45 <- read_csv(here("new_portal_data", "hh_q45.csv"))
+hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv"))
 ```
 
 ```{r}
@@ -39,22 +35,62 @@ summary <- hhs_all %>%
 ```
 
 ```{r}
-# Join hhs_all with questions 44, 45, and 48 using `submission_id` column
-#hhs_all_48 <- right_join(hhs_q48, hhs_all, by = "submissionid")
+# Checks to see which submissionid's are duplicated and how many times. Basically gives us an idea of how many ppl gave multiple answers for questions 44, 45, and/or 48.
+dupes <- data.frame(table(hhs_all_complete$submissionid))
 
-#hhs_all_45 <- right_join(hhs_q45, hhs_all_48, by = "submissionid")
+dupes <- data.frame(table(hhs_q44$submissionid)) %>% 
+  rename(submissionid = Var1)
+```
 
-#hhs_all_complete <- right_join(hhs_q44, hhs_all_45, by = "submissionid")
+```{r}
+# Cleaning data
+# Question 44
+hhs_q44_dupes <- hhs_q44 %>% 
+  inner_join(dupes, hhs_q44, by = "submissionid") %>% 
+  arrange(desc(submissionid)) 
+
+# Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
+hhs_q44_dupes <- hhs_q44_dupes[!(hhs_q44_dupes$Freq > 1 & hhs_q44_dupes$`44_meeting_attendance` == "Not sure"),]
+
+# Drops rows that have NA
+hhs_q44_dupes <- hhs_q44_dupes[!(hhs_q44_dupes$`44_meeting_attendance` == "na"),] 
+
+# Changes "No management" option to "No"
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No management" = "No"))
+
+# Probably want to do this last - Freq column here is artifact
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  group_by(submissionid, Freq) %>%
+  summarise(`44_meeting_attendance` = paste(`44_meeting_attendance`, collapse = ' '))
+
+# Checks to see if there are any dupes left
+hhs_q44_dupes_2 <- data.frame(table(hhs_q44_dupes$submissionid)) #%>% 
+  rename(submissionid = Var1)
+  
+# Question 45
+  
+# Question 48
+  
+```
+
+```{r}
+# Join the datasets after all the cleaning is done
+hhs_all_48 <- left_join(hhs_all, hhs_q48, by = "submissionid")
+
+hhs_all_45 <- left_join(hhs_all_48, hhs_q45, by = "submissionid")
+
+hhs_all_complete <- left_join(hhs_all_45, hhs_q44, by = "submissionid")
 
 #write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
 
 # No need to run the above code again, I have already written a .csv with the joined datasets
-hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
+#hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
 ```
 
-```{r}
-# Checks to see which submissionid's are duplicated and how many times. Basically gives us an idea of how many ppl gave multiple answers for questions 44, 45, and/or 48.
-dupes <- data.frame(table(hhs_all_complete$submissionid))
-```
+
+
+
+
 
 
