@@ -1,0 +1,462 @@
+---
+title: "full_analysis"
+author: "Dylan Glave"
+date: "8/16/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+
+library(tidyverse)
+library(here)
+library(janitor)
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(knitr)
+library(naniar)
+library(here)
+library(dplyr)
+library(scales)
+library(stringr)
+
+```
+
+## R Markdown
+
+Here is a complete Markdown document combining work from ER, LN and DG's combined analysis on Rare's Fish Forever survey data. 
+
+
+To start, we'll read in *all* relevant CSVs
+
+```{r, echo=FALSE}
+# Read in .csv from new Rare data portal
+hhs_all <- read_csv(here("new_portal_data", "hh_surveys_all.csv"))
+
+# Read in separate question .csvs from the new Rare data portal
+hhs_q44 <- read_csv(here("new_portal_data", "hh_q44.csv"))
+hhs_q45 <- read_csv(here("new_portal_data", "hh_q45.csv"))
+hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv"))
+
+
+```
+
+
+Next, we go through questions 44, 45, and 48 to remove any duplicates
+
+We do this because, when reading in the original CSVs, we saw answers like, "Yes, Yes, Yes," "No, No, No, No, No" and "Yes male, yes Female, Unsure."
+
+These questions ask respondents about their *household,* so it's possible that they answered individually for each member of their hosuehold. 
+However, the goal of this analysis is just to see if any single member of a hosuehold participated the management meetings, or enforcement.  
+
+
+
+```{r}
+# Check dupes for all questions
+dupes_44 <- data.frame(table(hhs_q44$submissionid)) %>% 
+  rename(submissionid = Var1)
+
+dupes_45 <- data.frame(table(hhs_q45$submissionid)) %>% 
+  rename(submissionid = Var1)
+
+dupes_48 <- data.frame(table(hhs_q48$submissionid)) %>% 
+  rename(submissionid = Var1)
+```
+
+The chunks below use recode() to change cells within Qs 44, 45, and 48 to each have a single answer. 
+
+```{r}
+# Cleaning data
+# Question 44
+hhs_q44_dupes <- hhs_q44 %>% 
+  inner_join(dupes_44, hhs_q44, by = "submissionid") %>% 
+  arrange(desc(submissionid)) 
+
+# Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
+hhs_q44_dupes <- hhs_q44_dupes[!(hhs_q44_dupes$Freq > 1 & hhs_q44_dupes$`44_meeting_attendance` == "Not sure"),]
+
+# Drops rows that have NA
+hhs_q44_dupes <- hhs_q44_dupes[!(hhs_q44_dupes$`44_meeting_attendance` == "na"),] 
+
+# Changes "No management to "No"
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No management" = "No"))
+
+# Probably want to do this last
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  group_by(submissionid, Freq) %>%
+  summarise(`44_meeting_attendance` = paste(`44_meeting_attendance`, collapse = ' ')) %>% 
+  select(-Freq)
+
+# Checks to see if there are any dupes left
+hhs_q44_dupes_2 <- data.frame(table(hhs_q44_dupes$submissionid)) %>% 
+  rename(submissionid = Var1)
+
+# Now recode the answer combos into Yes, No, & Not Sure only
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female Yes male" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male No" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No Yes male" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female Yes male No" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes female No" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "Yes male No Yes female" = "Yes"))
+
+hhs_q44_dupes <- hhs_q44_dupes %>%
+  mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No No" = "No"))
+
+```
+
+
+The following chunk combines duplicated from Question 45, and renames the observations that have been repeated. 
+End result: 1 observation for each submission ID
+
+```{r}
+# Question 45
+hhs_q45_dupes <- hhs_q45 %>% 
+  inner_join(dupes_45, hhs_q45, by = "submissionid") %>% 
+  arrange(desc(submissionid)) 
+
+# Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
+hhs_q45_dupes <- hhs_q45_dupes[!(hhs_q45_dupes$Freq > 1 & hhs_q45_dupes$`45_leadership_position` == "Not sure"),]
+
+# Drops rows that have NA
+hhs_q45_dupes <- hhs_q45_dupes[!(hhs_q45_dupes$`45_leadership_position` == "na"),] 
+
+# Changes "No management" option to "No"
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No management" = "No"))
+
+# Probably want to do this last - Freq column here is artifact
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  group_by(submissionid, Freq) %>%
+  summarise(`45_leadership_position` = paste(`45_leadership_position`, collapse = ' ')) %>% 
+  select(-Freq)
+
+# Checks to see if there are any dupes left
+hhs_q45_dupes_2 <- data.frame(table(hhs_q45_dupes$submissionid)) %>% 
+  rename(submissionid = Var1)
+
+# Now recode the answer combos into Yes, No, & Not Sure only
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes female" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male Yes female" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes female Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male No" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No Yes female" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes female No" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "Yes male Yes male" = "Yes"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No No No" = "No"))
+
+hhs_q45_dupes <- hhs_q45_dupes %>%
+  mutate(`45_leadership_position` = recode(`45_leadership_position`, "No No" = "No"))
+```
+
+
+Below, the same happens for question 48
+```{r}
+# Question 48 
+hhs_q48_dupes <- hhs_q48 %>% 
+  inner_join(dupes_48, hhs_q48, by = "submissionid") %>% 
+  arrange(desc(submissionid)) 
+
+# Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
+hhs_q48_dupes <- hhs_q48_dupes[!(hhs_q48_dupes$Freq > 1 & hhs_q48_dupes$`48_enforcement_participation` == "Not sure"),]
+
+# Drops rows that have NA
+hhs_q48_dupes <- hhs_q48_dupes[!(hhs_q48_dupes$`48_enforcement_participation` == "na"),] 
+
+# Changes "No management" option to "No"
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No management" = "No"))
+
+# Change "No enforcement system" and "There is no enforcement system" to "No"
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No enforcement system" = "No"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "There is no enforcement system" = "No"))
+
+# Probably want to do this last - Freq column here is artifact
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  group_by(submissionid, Freq) %>%
+  summarise(`48_enforcement_participation` = paste(`48_enforcement_participation`, collapse = ' ')) %>% 
+  select(-Freq)
+
+# Checks to see if there are any dupes left
+hhs_q48_dupes_2 <- data.frame(table(hhs_q48_dupes$submissionid)) #%>% 
+  #rename(submissionid = Var1)
+
+# Now recode the answer combos into Yes, No, & Not Sure only
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male No" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female No" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No No No" = "No"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No No" = "No"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes male No No" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "No No Yes male" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female Yes female Yes female" = "Yes"))
+
+hhs_q48_dupes <- hhs_q48_dupes %>%
+  mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female Yes male No" = "Yes"))
+```
+
+
+After recoding/cleaning, these different df were all combined into `hhs_complete_all` using `right_join`
+
+```{r}
+# Join the datasets after all the cleaning is done
+hhs_all_48 <- right_join(hhs_q48_dupes, hhs_all, by = "submissionid")
+
+hhs_all_45 <- right_join(hhs_q45_dupes, hhs_all_48, by = "submissionid")
+
+hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_45, by = "submissionid")
+
+#write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
+
+# No need to run the above code again, I have already written a .csv with the joined datasets
+
+hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
+```
+
+
+Here is a quick summary table of the total number of responses, which matches the **original** number of surveys completed
+17712
+```{r}
+
+# Get list of all reserves by country & how many HH surveys were answered
+summary <- hhs_all_complete %>% 
+  count(country, level1_name, level2_name, ma_name) %>% 
+  #arrange(-n) %>% 
+  mutate(level1_name = fct_reorder(country, n, sum)) %>% 
+  adorn_totals("row")
+
+# Summary table contains two NA's in the 'ma_name' column
+# 75 reserves if you look at uniques
+```
+
+##### Filtering Cleaned Data
+
+Alright! 
+
+This marks the end of the "cleaning" data section. The final two dataframes 
+(hhs_all_complete and summary) have each survey resonse as 1 row, with no duplicates, and questions that were answered multiple times (44, 45, and 48) now have 1 answer of *Yes, No,* or *Unsure*. 
+
+
+```{r, include=TRUE, echo=FALSE}
+
+
+```
+
+
+OK! Here we have re-done all the *agreement* tables. From here, I'll do the same for engagement. I'll then hide the previous code bits in the adapted Rmd. Today, I'll also try to recode 0s and 1s. 
+NOTE TO DYL: Still need to go over Indonesia numbers with TQ. 
+#### Reshaping Engagement
+##### Goal: Retain a robust set of answered questions, and increase N to several thousand. 
+
+
+```{r}
+ hhs_complete_filtered <- hhs_all_complete %>% 
+  data.frame() %>% 
+  clean_names() %>% 
+ select( c(1:2, 6:18, 21:28, x44_meeting_attendance, x45_leadership_position,
+x48_enforcement_participation,  x53_encourage_regulations,
+x61f_rights_distribution_fair, x61h_individual_behavior,
+           x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61e_violations_decrease_profit, x62_reserve_compliance, x64_wrong_fishing_reserve,
+x11a_income_farming, x11a_months_farming, x11b_income_harvesting, x11b_months_harvesting, x11c_income_fishing_artisanal,  x11c_months_fishing_artisanal, x11d_income_fishing_industrial,
+x11d_months_fishing_industrial, x11e_income_buying_trading, x11e_months_buying_trading, x11f_income_processing, x11f_months_processing, x11g_income_aquaculture, x11g_months_aquaculture, x11h_income_extraction,
+x11h_months_extraction, x11i_income_tourism, x11i_months_tourism,   x11j_income_other_wage, x11j_months_other_wage, x11k_income_other,
+x11k_months_other, x11k_other_source, 
+x12a_fishing_men, x12b_fishing_women, x12c_fishing_children, 
+x19_current_fish_catch, 
+x22_catch_5yrs,                   
+x23_job_secure, 
+x30_trust_community,x30_trust_community_neighbors, x30_trust_fishers_community,
+x30_trust_fishers_other, x30_trust_local_decision,
+x30_trust_ngo, x30_trust_regional_decision, x30_trust_religious_leaders,
+x30_trust_village_alert, x31_my_community_ability,
+x38_reserve_fishing_allowed, 
+x39_ma_boundaries_aware, 
+x40_reserve_boundaries_aware,
+x49_enforcement_responsible,
+x50_ma_punishment,
+x51a_fishers_gear_not_permitted, x51b_fishers_reserves, 
+x51c_fishers_ma_area, x51d_fishers_violate_fish_size, x51e_fishers_caught,
+x55_worry_food, x55_worry_food,
+x56_reduce_meal_size_adult,  
+x60_hh_fish_consumption,
+x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, 
+x61h_individual_behavior,
+x61i_help_neighbors,
+x66_reaction_fishing_reserve, x66_response_fishing_reserve)) %>% 
+ mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
+   drop_na(24:29, 30, 31, 33:36, 38:39)
+
+
+```
+
+- *For Questions 44 and 45* 
+ I used mutate_at() to change NAs to 0s. right now it may looks weird, but soon it will all be zeroes and ones. These were only asked to "fisher households" and reduce N a lot. They pair with Questions 46 and 47 (also only asked to fisher households.) 
+
+- *Regarding Question 61e* (Violations decrease profit)
+removing NA rows removes 3000 of our 3440 observations, we may just need to drop this question from the agreement index. [Talk to TQ!]
+
+- *Dropping NAs*: We drop NAs for all* Engagement and Agreement Questions. 
+*We do not drop NAs for the open-ended opinion questions, or 61e, mentioned above. 
+
+- *For Q 46-47* we've excluded NAs since they mostly represent "non-fisher households" The difference in n goes from 5640 to ~3300. We want to see how *fishers* comply though. So the smaller N will show us that. 
+
+Let's just make a quick table with the *counts* of all the survey responses that we have for analysis. 
+
+```{r}
+hhs_filtered_count <- hhs_complete_filtered %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
+
+
+count_table <- knitr::kable(hhs_filtered_count, format = "html", caption = "Engagement and Agreement Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(hhs_filtered_count)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+count_table
+
+```
+
+
+
+#### Coding values to survey Answers
+I'll start reassigning 0s and 1 to all the binary Questions
+**This is not final** I'm exploring the methods to do this in code, next week Tasha and I will decide the actual valuation of each piece. 
+Let me list out which A and E questions have binary responses, if the majority of these have "neither agree nor disagree," then I'll move from -1 to 1, with a neutral option. 
+
+
+###### Engagement
+Apologies for listing these so many times, that will change in the final Rmd. 
+- 44: Yes/No 1/-1 (We recoded not sure to No, see Methods)
+- 45: Yes/No 1/-1 (We recoded 'Not sure to No, see Methods)
+- 48: Yes/No/  No enforcement 1/0/-1 
+
+
+- 53: Very Often - Never, community has no fishing regulations [Flag for this being its own index]
+
+
+- 61 (f): Likert Scale (Strongly) Agree-Disagree 
+- 61 (g): Likert Scale (Strongly) Agree-Disagree
+IS there a standard for measuring Qs against on another? Should we have our eyes out for some danger in making this index? Any ideas what could happen? 
+IS -1 to 1 reasonable? What about using the likerts 
+Not sure --> No. we ahve the rationale that engagement would 
+"compress often and very often? 0.5 and 1?" 
+generally deal with issue of likert scale, using ordinal but not implying that "very often" is 2x good. 
+Watch allison ordinal 
+###### Agreement 
+- 10: Yes/No/Neutral 1,0,-1
+- 43: Yes/No: 1, -1 (was there an Unsure answer here?)
+- 46: Agree/Neutral/Disagree: 1, 0. -1
+- 47: Agree/Neutral/Disagree: 1, 0. -1
+- 52: Yes, No, Unsure: 1, 0,-1
+- 61(a): Likert Scale (Strongly) Agree-Disagree
+- 61(e): Likert Scale (Strongly) Agree-Disagree
+- 62: Belief that fish catch will... Go up, Go down, remain the same, unsure. 1, 0, -1
+- 64:  
+For 64, which one is included, is 63 included? 
+I'll start converting the "easy" questions to 1s and 0s. 
+**Because there was so much much dang coding in the global_filtered, I'll make a new dataframe for the numbered version. 
+We'll call it **hhs_filtered_numeric**
+
+
+* Starting to recode likert scale questions into numbers*
+
+```{r}
+hhs_filtered_numeric <- hhs_complete_filtered %>% 
+  mutate(x44_meeting_attendance = recode(x44_meeting_attendance, "Yes" = 1, "No"  = -1, "Not sure" = 0, "0" = 0)) %>% 
+  mutate(x45_leadership_position = recode(x45_leadership_position, "Yes" = 1, "No"  = -1, "Not sure" = 0, "0" = 0)) %>% 
+  mutate(x48_enforcement_participation = recode(x48_enforcement_participation, "Yes" = 1, "No"  = -1, "Not sure" = 0, "0" = 0))  %>% 
+   mutate(x53_encourage_regulations = recode(x53_encourage_regulations,    "Never" = -2, "Rarely" = -1, "Sometimes" = 0,   
+"Often" = 1, "Very often" = 2, "No regulations" = 0))
+
+
+```
+
+
+
