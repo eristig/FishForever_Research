@@ -23,6 +23,10 @@ library(here)
 library(dplyr)
 library(scales)
 library(stringr)
+library(plotly)
+library(foreign)
+library(nnet)
+library(reshape2)
 
 ```
 
@@ -528,6 +532,8 @@ All "No management" or "No regulations" ar gone. and all 0s have been removed fr
 
 Now, I **believe** it's time to scale the data! 
 
+
+
 ###### Scaling
 
 ```{r}
@@ -535,28 +541,37 @@ Now, I **believe** it's time to scale the data!
 
 
 hhs_scaled <- hhs_filtered_numeric %>% 
-  mutate(x44_scaled = x44_meeting_attendance - mean(x44_meeting_attendance/(sd(x44_meeting_attendance)))) %>% 
-  mutate(x45_scaled = x45_leadership_position - mean(x45_leadership_position/(sd(x45_leadership_position)))) %>% 
-  mutate(x48_scaled = x48_enforcement_participation - mean(x48_enforcement_participation/(sd(x48_enforcement_participation)))) %>% 
-  mutate(x53_scaled = x53_encourage_regulations - mean(x53_encourage_regulations/(sd(x53_encourage_regulations)))) %>% 
-  mutate(x61g_scaled = x61g_fishing_change_behavior - mean(x61g_fishing_change_behavior/(sd(x61g_fishing_change_behavior)))) %>% 
-##Switch from Engagement to Agreement
-mutate(x10_scaled = x10_mpa_important - mean(x10_mpa_important/(sd(x10_mpa_important)))) %>% 
-  mutate(x43_scaled = x43_ma_benefits - mean(x43_ma_benefits/(sd(x43_ma_benefits)))) %>% 
-  mutate(x46_scaled = x46_represent_interests - mean(x46_represent_interests/(sd(x46_represent_interests)))) %>% 
-  mutate(x47_scaled = x47_represent_contributions - mean(x47_represent_contributions/(sd(x47_represent_contributions)))) %>% 
-  mutate(x52_scaled = x52_ma_benefit_5yrs - mean(x52_ma_benefit_5yrs/(sd(x52_ma_benefit_5yrs)))) %>% 
-  mutate(x61a_scaled = x61a_current_regulations - mean(x61a_current_regulations/(sd(x61a_current_regulations)))) %>% 
-   mutate(x61f_scaled = x61f_rights_distribution_fair - mean(x61f_rights_distribution_fair/(sd(x61f_rights_distribution_fair)))) %>% 
-  mutate(x62_scaled = x62_reserve_compliance - mean(x62_reserve_compliance/(sd(x62_reserve_compliance)))) %>% 
-  mutate(x64_scaled = x64_wrong_fishing_reserve - mean(x64_wrong_fishing_reserve/(sd(x64_wrong_fishing_reserve)))) %>% 
-  as.numeric(24:28)
+  mutate(x44_scaled = (x44_meeting_attendance - mean(x44_meeting_attendance))/sd(x44_meeting_attendance)) %>% 
+
+  
+  mutate(x45_scaled = (x45_leadership_position - mean(x45_leadership_position))/sd(x45_leadership_position)) %>% 
+  
+  mutate(x48_scaled = (x48_enforcement_participation - mean(x48_enforcement_participation))/sd(x48_enforcement_participation)) %>% 
+  
+  mutate(x53_scaled = (x53_encourage_regulations - mean(x53_encourage_regulations))/sd(x53_encourage_regulations)) %>% 
+  
+  mutate(x61g_scaled = (x61g_fishing_change_behavior - mean(x61g_fishing_change_behavior))/sd(x61g_fishing_change_behavior)) %>% 
+
+  ##Switch from Engagement to Agreement
+
+  mutate(x10_scaled = (x10_mpa_important - mean(x10_mpa_important))/ sd(x10_mpa_important)) %>% 
+  mutate(x43_scaled = (x43_ma_benefits - mean(x43_ma_benefits))/sd(x43_ma_benefits)) %>% 
+  mutate(x46_scaled = (x46_represent_interests - mean(x46_represent_interests))/sd(x46_represent_interests)) %>% 
+  mutate(x47_scaled = (x47_represent_contributions - mean(x47_represent_contributions))/sd(x47_represent_contributions)) %>% 
+  mutate(x52_scaled = (x52_ma_benefit_5yrs - mean(x52_ma_benefit_5yrs))/sd(x52_ma_benefit_5yrs)) %>% 
+  mutate(x61a_scaled = (x61a_current_regulations - mean(x61a_current_regulations))/sd(x61a_current_regulations)) %>% 
+   mutate(x61f_scaled = (x61f_rights_distribution_fair - mean(x61f_rights_distribution_fair))/sd(x61f_rights_distribution_fair)) %>% 
+  mutate(x62_scaled = (x62_reserve_compliance - mean(x62_reserve_compliance))/sd(x62_reserve_compliance)) %>% 
+  mutate(x64_scaled = (x64_wrong_fishing_reserve - mean(x64_wrong_fishing_reserve))/sd(x64_wrong_fishing_reserve)) 
   
     
 ### CAN I MAKE A FUNCTION FOR THIS
 
   
 ```
+
+I've double-checked the statistics on each of the above variables! Each new column has a mean of enarly 0 (3x10^-16, etc.)
+
 
 
 ##### Graphing Indices
@@ -565,24 +580,79 @@ Erin will tackle the PCA/logistic version thereof, I'm going to mess around with
 
 *Let's start with `sum()`* 
 
-
+Along with scaling the data onto a Z-Axis, I'm going to simply sum across the agreement and engagement columns too, to see what we get!
 ```{r}
 
 scaled_sum <- hhs_scaled %>% 
  rowwise() %>% 
-  mutate(eng_sum = sum(x44_scaled + x45_scaled + x48_scaled + x48_scaled + x53_scaled + x61g_scaled)) %>% 
-  mutate(agree_sum = x10_scaled + x43_scaled + x46_scaled + x47_scaled + x52_scaled + x61a_scaled + x61f_rights_distribution_fair + x62_scaled + x64_scaled)
+  mutate(eng_sum = sum(x44_scaled,x45_scaled, x48_scaled, x53_scaled,  x61g_scaled)) %>% 
+  mutate(agree_sum = sum (x10_scaled + x43_scaled + x46_scaled + x47_scaled + x52_scaled + x61a_scaled + x61f_rights_distribution_fair + x62_scaled + x64_scaled)) %>% 
+  mutate(eng_mean = mean(c(x44_scaled, x45_scaled, x48_scaled, x48_scaled,  x53_scaled,  x61g_scaled))) %>% 
+  mutate(agree_mean = mean(c(x10_scaled,  x43_scaled, x46_scaled, x47_scaled,  x52_scaled,  x61a_scaled, x61f_scaled,  x62_scaled,  x64_scaled))) %>% 
+
+    ## Below I add two more variables:  "raw_eng_sum" and "raw_agree_sum." Without scaling, I've summed agreement and engagement across rows, for exploratory visualization
+  mutate(raw_eng_sum = sum(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior))) %>% 
+  mutate(raw_agree_sum = sum(c(x10_mpa_important, x43_ma_benefits, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair, x62_reserve_compliance, x64_wrong_fishing_reserve))) 
 
 ```
 
 
 With that, we'll make a preliminary graph: 
 
+
+
 ```{r}
  ggplot(data = scaled_sum,
-                      aes(x = eng_sum, y = agree_sum)) +
-  geom_point()
+                      aes(x = eng_mean, y = agree_mean, color = country)) +
+  geom_point(size = 0.7, alpha = 0.7) +
+  theme_bw()
+
+  
+ggplot(data = scaled_sum,
+       aes(x = eng_sum, y = agree_sum, color = country)) +
+  geom_point(size = 0.7, alpha = 0.7) +
+  theme_bw()
+  
+
+
+ggplot(data = scaled_sum,
+       aes(x = raw_eng_sum, y = raw_agree_sum, color = country)) +
+  geom_point(size = 0.7, alpha = 0.7) +
+  theme_bw()
+
 ```
 
 
+Action Items: 
+
+
+
+- Mark by Reserve
+- Mark by Country 
+- Size = n
+- Sensitivity Analysis of Brazil
+
+
+
+*If we assumed that this graph is what we want, where would we draw the lines for the different postures? 
+
+- IS it Okay to just model z-scores? 
+We want to see actual levels of compliance, but this is the first analysis of its type. We do not have objective "standards" where a fisher's response would change from reluctant to committed.
+
+
+
+-Re: Logit, we'll easily be able to model how predictors impact agreement OR engagement, but to do both at the same time will be a challenge. 
+
+-"Ordinal logistic regression: If the outcome variable is truly ordered and if it also satisfies the assumption of proportional odds, then switching to ordinal logistic regression will make the model more parsimonious."
+
+
+
+[https://stats.idre.ucla.edu/r/dae/multinomial-logistic-regression/]
+
+
+##### Playign around with the Logit Model
+
+```{r}
+
+```
 
