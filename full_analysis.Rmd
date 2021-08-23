@@ -576,6 +576,13 @@ scaled_sum <- hhs_scaled %>%
 ```
 
 
+With that, we'll make a preliminary graph: 
+
+```{r}
+ ggplot(data = scaled_sum,
+                      aes(x = eng_sum, y = agree_sum)) +
+  geom_point()
+```
 
 
 
