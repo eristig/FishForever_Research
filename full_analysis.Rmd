@@ -336,8 +336,8 @@ NOTE TO DYL: Still need to go over Indonesia numbers with TQ.
   clean_names() %>% 
  select( c(1:2, 6:18, 21:28, x44_meeting_attendance, x45_leadership_position,
 x48_enforcement_participation,  x53_encourage_regulations,
-x61f_rights_distribution_fair, x61h_individual_behavior,
-           x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61e_violations_decrease_profit, x62_reserve_compliance, x64_wrong_fishing_reserve,
+ x61g_fishing_change_behavior,
+           x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61f_rights_distribution_fair, x62_reserve_compliance, x64_wrong_fishing_reserve,
 x11a_income_farming, x11a_months_farming, x11b_income_harvesting, x11b_months_harvesting, x11c_income_fishing_artisanal,  x11c_months_fishing_artisanal, x11d_income_fishing_industrial,
 x11d_months_fishing_industrial, x11e_income_buying_trading, x11e_months_buying_trading, x11f_income_processing, x11f_months_processing, x11g_income_aquaculture, x11g_months_aquaculture, x11h_income_extraction,
 x11h_months_extraction, x11i_income_tourism, x11i_months_tourism,   x11j_income_other_wage, x11j_months_other_wage, x11k_income_other,
@@ -365,7 +365,11 @@ x61h_individual_behavior,
 x61i_help_neighbors,
 x66_reaction_fishing_reserve, x66_response_fishing_reserve)) %>% 
  mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
-   drop_na(24:29, 30, 31, 33:36, 38:39)
+   drop_na(24:28, 29, 30, 32:38) %>% 
+    filter(x47_represent_contributions != "No management") %>% 
+    filter(x53_encourage_regulations != "No regulations")  %>% 
+    filter(x46_represent_interests != "No management") %>% 
+    filter(x52_ma_benefit_5yrs != "No management")
 
 
 ```
@@ -404,6 +408,31 @@ count_table
 ```
 
 
+Counts by Reserve is great, but Larissa would like the same table 
+
+```{r}
+
+hhs_count_by_country <- hhs_complete_filtered %>% 
+  count(country) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Country" = country) %>% 
+  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
+
+
+country_count_table <- knitr::kable(hhs_count_by_country, format = "html", caption = "Engagement and Agreement Country Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(hhs_count_by_country)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+country_count_table
+
+```
+
+
+
 
 #### Coding values to survey Answers
 I'll start reassigning 0s and 1 to all the binary Questions
@@ -411,52 +440,142 @@ I'll start reassigning 0s and 1 to all the binary Questions
 Let me list out which A and E questions have binary responses, if the majority of these have "neither agree nor disagree," then I'll move from -1 to 1, with a neutral option. 
 
 
-###### Engagement
-Apologies for listing these so many times, that will change in the final Rmd. 
-- 44: Yes/No 1/-1 (We recoded not sure to No, see Methods)
-- 45: Yes/No 1/-1 (We recoded 'Not sure to No, see Methods)
-- 48: Yes/No/  No enforcement 1/0/-1 
 
-
-- 53: Very Often - Never, community has no fishing regulations [Flag for this being its own index]
-
-
-- 61 (f): Likert Scale (Strongly) Agree-Disagree 
-- 61 (g): Likert Scale (Strongly) Agree-Disagree
 IS there a standard for measuring Qs against on another? Should we have our eyes out for some danger in making this index? Any ideas what could happen? 
 IS -1 to 1 reasonable? What about using the likerts 
-Not sure --> No. we ahve the rationale that engagement would 
-"compress often and very often? 0.5 and 1?" 
-generally deal with issue of likert scale, using ordinal but not implying that "very often" is 2x good. 
+
+
 Watch allison ordinal 
 ###### Agreement 
-- 10: Yes/No/Neutral 1,0,-1
-- 43: Yes/No: 1, -1 (was there an Unsure answer here?)
-- 46: Agree/Neutral/Disagree: 1, 0. -1
-- 47: Agree/Neutral/Disagree: 1, 0. -1
-- 52: Yes, No, Unsure: 1, 0,-1
-- 61(a): Likert Scale (Strongly) Agree-Disagree
-- 61(e): Likert Scale (Strongly) Agree-Disagree
-- 62: Belief that fish catch will... Go up, Go down, remain the same, unsure. 1, 0, -1
-- 64:  
-For 64, which one is included, is 63 included? 
+
+
 I'll start converting the "easy" questions to 1s and 0s. 
 **Because there was so much much dang coding in the global_filtered, I'll make a new dataframe for the numbered version. 
 We'll call it **hhs_filtered_numeric**
 
 
-* Starting to recode likert scale questions into numbers*
+* Starting to recode likert questions into numbers*
 
+###### Here are the breakdowns for each Engagement and Agreement question:
+
+####### Engagement
+
+Apologies for listing these so many times, that will change in the final Rmd. 
+- 44: Yes/No 1/-1 (We recoded not sure to No, see Methods)
+- 45: Yes/No 1/-1 (We recoded 'Not sure to No, see Methods)
+- 48: Yes/No/  Not Sure 1/0/-1 
+* Check amount of zeros for Q 48
+
+- 53: Very Often - Never, community has no fishing regulations 
+[As a back up, this would be flagged for this being its own index of engagement]
+
+
+- 61 (f): Likert Scale (Strongly) Disagree-Agree (1-5) 
+- 61 (h): Likert Scale (Strongly) Agree-Disagree
+
+###### Agreement
+
+- 10: Yes/No/Neutral 1,0,-1
+- 43: Yes/No: 1, 0, -1 
+- 46: Agree/Neither/Disagree: 1, 0. -1
+- 47: Agree/Neither-No Management - na/Disagree: 1, 0. -1
+- 52: Yes/Unsure-No management-na/No: 1, 0,-1
+- 61(a): Likert Scale (Strongly) Agree-Disagree 0-5
+- 61(e): Likert Scale (Strongly) Agree-Disagree 0-5 [GET RID OF]
+- 62: Belief that fish catch will... Go up, Go down, remain the same, unsure. 1, 0, -1
+- 64: How wrong is fishing in the reserve (Not bad at all, Very bad): 1-5
+
+
+The chunk below uses `mutate()` and `recode` to complete the numeration above. 
 ```{r}
 hhs_filtered_numeric <- hhs_complete_filtered %>% 
   mutate(x44_meeting_attendance = recode(x44_meeting_attendance, "Yes" = 1, "No"  = -1, "Not sure" = 0, "0" = 0)) %>% 
   mutate(x45_leadership_position = recode(x45_leadership_position, "Yes" = 1, "No"  = -1, "Not sure" = 0, "0" = 0)) %>% 
   mutate(x48_enforcement_participation = recode(x48_enforcement_participation, "Yes" = 1, "No"  = -1, "Not sure" = 0, "0" = 0))  %>% 
    mutate(x53_encourage_regulations = recode(x53_encourage_regulations,    "Never" = -2, "Rarely" = -1, "Sometimes" = 0,   
-"Often" = 1, "Very often" = 2, "No regulations" = 0))
+"Often" = 1, "Very often" = 2)) %>%
+
+## 61 e and h are already coded for likert scale 
+  
+  
+## Agreement recoding below: 
+  
+mutate(x46_represent_interests = recode(x46_represent_interests,    "Agree" = 1, "Disagree" = -1, "Neither" = 0,  
+  "na" = 0)) %>% 
+  mutate(x47_represent_contributions = recode(x47_represent_contributions,    "Agree" = 1, "Disagree" = -1, "Neither" = 0,   "na" = 0)) %>% 
+ mutate(x52_ma_benefit_5yrs = recode(x52_ma_benefit_5yrs, "Yes" = 1, "No"  = -1, "Unsure" = 0, "na" = 0)) %>% 
+  mutate(x62_reserve_compliance = recode(x62_reserve_compliance,
+          "go up" = 1, "3. La captura de los pescadores aumentará" = 1,
+          "stay same" = 0, "2. La captura de los pescadores seguirá igual"  = 0, 
+           "not know"  = 0, "4. No sabe" = 0, 
+          "go down" = -1, "La captura de los pescadores disminuirá" = -1)) %>% 
+  mutate(x64_wrong_fishing_reserve = recode(x64_wrong_fishing_reserve,
+     "extremely wrong" = 5, "5. Extremadamente malo" = 5,
+     "very wrong" = 4, "4. Muy malo" = 4,
+       "moderately" = 3, "3. Moderadamente malo" = 3,        
+ "Un poquito malo" = 2,   "slightly" = 2,                           
+           "1. Nada malo" = 1,  "not at all" = 1, "na" = 0)) %>%   
+  filter_at(vars(x61a_current_regulations, x61f_rights_distribution_fair, x61g_fishing_change_behavior, x64_wrong_fishing_reserve, ), all_vars((.) != 0))
 
 
 ```
+
+Notes: 
+- For the Likert scale questions that Rare coded from 0-5, I removed the 0s, since they were equivalent to NAs. 
+
+All "No management" or "No regulations" ar gone. and all 0s have been removed from questions that rare coded from 0-5. Only 1 question made a significant change, `x61f_rights_distribution_fair`
+
+
+Now, I **believe** it's time to scale the data! 
+
+###### Scaling
+
+```{r}
+
+
+
+hhs_scaled <- hhs_filtered_numeric %>% 
+  mutate(x44_scaled = x44_meeting_attendance - mean(x44_meeting_attendance/(sd(x44_meeting_attendance)))) %>% 
+  mutate(x45_scaled = x45_leadership_position - mean(x45_leadership_position/(sd(x45_leadership_position)))) %>% 
+  mutate(x48_scaled = x48_enforcement_participation - mean(x48_enforcement_participation/(sd(x48_enforcement_participation)))) %>% 
+  mutate(x53_scaled = x53_encourage_regulations - mean(x53_encourage_regulations/(sd(x53_encourage_regulations)))) %>% 
+  mutate(x61g_scaled = x61g_fishing_change_behavior - mean(x61g_fishing_change_behavior/(sd(x61g_fishing_change_behavior)))) %>% 
+##Switch from Engagement to Agreement
+mutate(x10_scaled = x10_mpa_important - mean(x10_mpa_important/(sd(x10_mpa_important)))) %>% 
+  mutate(x43_scaled = x43_ma_benefits - mean(x43_ma_benefits/(sd(x43_ma_benefits)))) %>% 
+  mutate(x46_scaled = x46_represent_interests - mean(x46_represent_interests/(sd(x46_represent_interests)))) %>% 
+  mutate(x47_scaled = x47_represent_contributions - mean(x47_represent_contributions/(sd(x47_represent_contributions)))) %>% 
+  mutate(x52_scaled = x52_ma_benefit_5yrs - mean(x52_ma_benefit_5yrs/(sd(x52_ma_benefit_5yrs)))) %>% 
+  mutate(x61a_scaled = x61a_current_regulations - mean(x61a_current_regulations/(sd(x61a_current_regulations)))) %>% 
+   mutate(x61f_scaled = x61f_rights_distribution_fair - mean(x61f_rights_distribution_fair/(sd(x61f_rights_distribution_fair)))) %>% 
+  mutate(x62_scaled = x62_reserve_compliance - mean(x62_reserve_compliance/(sd(x62_reserve_compliance)))) %>% 
+  mutate(x64_scaled = x64_wrong_fishing_reserve - mean(x64_wrong_fishing_reserve/(sd(x64_wrong_fishing_reserve)))) %>% 
+  as.numeric(24:28)
+  
+    
+### CAN I MAKE A FUNCTION FOR THIS
+
+  
+```
+
+
+##### Graphing Indices
+
+Erin will tackle the PCA/logistic version thereof, I'm going to mess around with graphing our data, using different index measures. 
+
+*Let's start with `sum()`* 
+
+
+```{r}
+
+scaled_sum <- hhs_scaled %>% 
+ rowwise() %>% 
+  mutate(eng_sum = sum(x44_scaled + x45_scaled + x48_scaled + x48_scaled + x53_scaled + x61g_scaled)) %>% 
+  mutate(agree_sum = x10_scaled + x43_scaled + x46_scaled + x47_scaled + x52_scaled + x61a_scaled + x61f_rights_distribution_fair + x62_scaled + x64_scaled)
+
+```
+
+
 
 
 
