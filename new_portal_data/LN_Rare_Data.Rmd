@@ -22,6 +22,9 @@ hhs_q45 <- read_csv(here("new_portal_data", "hh_q45.csv"))
 hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv"))
 ```
 
+
+
+
 ```{r}
 # Check dupes for all questions
 dupes_44 <- data.frame(table(hhs_q44$submissionid)) %>% 
@@ -94,6 +97,7 @@ hhs_q44_dupes <- hhs_q44_dupes %>%
 
 hhs_q44_dupes <- hhs_q44_dupes %>%
   mutate(`44_meeting_attendance` = recode(`44_meeting_attendance`, "No No" = "No"))
+
 ```
 
 ```{r}
@@ -234,6 +238,8 @@ hhs_q48_dupes <- hhs_q48_dupes %>%
   mutate(`48_enforcement_participation` = recode(`48_enforcement_participation`, "Yes female Yes male No" = "Yes"))
 ```
 
+
+
 ```{r}
 # Join the datasets after all the cleaning is done
 hhs_all_48 <- right_join(hhs_q48_dupes, hhs_all, by = "submissionid")
@@ -249,7 +255,10 @@ hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_45, by = "submissionid")
 hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
 ```
 
+
+
 ```{r}
+
 # Get list of all reserves by country & how many HH surveys were answered
 summary <- hhs_all_complete %>% 
   count(country, level1_name, level2_name, ma_name) %>% 
@@ -260,4 +269,3 @@ summary <- hhs_all_complete %>%
 # Summary table contains two NA's in the 'ma_name' column
 # 75 reserves if you look at uniques
 ```
-
