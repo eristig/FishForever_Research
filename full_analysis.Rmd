@@ -583,6 +583,10 @@ Erin will tackle the PCA/logistic version thereof, I'm going to mess around with
 Along with scaling the data onto a Z-Axis, I'm going to simply sum across the agreement and engagement columns too, to see what we get!
 ```{r}
 
+
+  
+
+
 scaled_sum <- hhs_scaled %>% 
  rowwise() %>% 
   mutate(eng_sum = sum(x44_scaled,x45_scaled, x48_scaled, x53_scaled,  x61g_scaled)) %>% 
@@ -603,8 +607,14 @@ With that, we'll make a preliminary graph:
 
 ```{r}
  ggplot(data = scaled_sum,
-                      aes(x = eng_mean, y = agree_mean, color = country)) +
-  geom_point(size = 0.7, alpha = 0.7) +
+                      aes(x = eng_mean, y = agree_mean)) +
+  geom_point(aes(color = country), size = 0.7, alpha = 0.7) +
+labs( x = "Engagement (Scaled across 5 Questions)",
+      y = "Agreement (Scaled across 9 Questions)",
+      title = "Indices of Engagement and Agreement in Co-Managed Fisheries",
+      color = "Country"
+  
+) +
   theme_bw()
 
   
@@ -627,9 +637,6 @@ Action Items:
 
 
 
-- Mark by Reserve
-- Mark by Country 
-- Size = n
 - Sensitivity Analysis of Brazil
 
 
@@ -650,9 +657,22 @@ We want to see actual levels of compliance, but this is the first analysis of it
 [https://stats.idre.ucla.edu/r/dae/multinomial-logistic-regression/]
 
 
-##### Playign around with the Logit Model
-
+##### Playing around with the Logit Model
+**Fully exploratory** 
+Do not sue the following as resuls
 ```{r}
 
+ scaled_sum$eng_mean <- relevel(scaled_sum$eng_mean, ref = "-1.5")
+test_regression <- multinom(data = scaled_sum,
+                            eng_mean ~ x50_ma_punishment + 
+                              x40_reserve_boundaries_aware)
+
+
 ```
+FOR ERIN!
+Using `hhs_scaled` df
+
+Engagement is cols 24:28
+Agreement is 29:38, skip 31!
+
 
