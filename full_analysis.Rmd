@@ -713,6 +713,7 @@ Making some tables and graphs for Claudia + Rare:
 hhs_scaled_character <- hhs_scaled %>% 
   as.character(c(24:28))
   
+
 hhs_scaled_sum <- hhs_scaled %>%
   select(24:28) %>% 
   summarise_each(funs(min = min, 
@@ -730,6 +731,13 @@ stargazer(
     df[, cols], type = "text", 
     summary.stat = c("min", "p25", "mean", "p75", "max", "median", "sd"))
 
+
+df_agree_stats <- data.frame(hhs_scaled) %>% 
+cols <- c(29, 30, 32:38)  
+stargazer(
+    df[, cols], type = "text", 
+    summary.stat = c("min", "p25", "mean", "p75", "max", "median", "sd"))
+
 ## WE HAVE SOME STATS doube-checking to do. 
 
 ## st(hhs_scaled,
@@ -738,8 +746,7 @@ stargazer(
 ##                  'median(x)')))
 
 
-
-
+df_agree_stats
 
 
 ```
@@ -749,11 +756,8 @@ Great!
 
 
 
-
-
-
-
 ##### Playing around with the Logit Model
+
 **Fully exploratory** 
 Do not sue the following as resuls
 ```{r}
@@ -818,6 +822,7 @@ cluster_number_est <- NbClust(scaled_sum[24:28], min.nc = 2, max.nc = 8, method 
 
 ```
 
+
 So R has suggested that there are *4* meaningful clusters. 
 
 NOTE: We'll have to walk through the weights of 1-5 and -1/1 to having more meaningful analysis within clusters. this is BECAUSE we're not seeing even steps between each 'level up.' 
@@ -846,7 +851,7 @@ OK! That's a whole lot of information.
 I'll look at a couple key factors
 
 - size
-- cluster (which clsuter each observation is in)
+- cluster (which cluster each observation is in)
 
 
 ```{r}
@@ -941,6 +946,8 @@ ggplot(data = x45_counts,
 ```
 *Question 45: Mean = -0.551. This mean shows that 3/4 of fishers responded "No" Few fisher households included someone with a leadership position within the fishery.*
 
+
+
 **Question 48**
 
 ```{r}
@@ -980,5 +987,121 @@ ggplot(data = x61g_counts,
 ```
 *Question 61(g) mean = 3.955. This is the first mean that really skews high. With a mode of 4, most respondents were at least "willing" to change their fishing behavior for the reserve structure.*
 
+
+
+*Moving onto Agreement* 
+
+```{r}
+x10_counts <- scaled_sum %>% 
+ count(x10_mpa_important)
+
+ggplot(data = x10_counts,
+       aes(x = x10_mpa_important, y = n)) +
+ geom_bar( stat="identity", fill="pink3") +
+  theme_bw()
+```
+*Question 10: Mean = 0.958  Nearly everyone finds "protection" and management to be important for their fishing grounds.*
+
+
+
+```{r}
+x43_counts <- scaled_sum %>% 
+ count(x43_ma_benefits)
+
+ggplot(data = x43_counts,
+       aes(x = x43_ma_benefits, y = n)) +
+ geom_bar( stat="identity", fill="slateblue2") +
+  theme_bw()
+```
+*43:  Mean  = 0.556. Nearly no one answered with the negative response.*
+
+
+
+
+
+```{r}
+x46_counts <- scaled_sum %>% 
+ count(x46_represent_interests)
+
+ggplot(data = x46_counts,
+       aes(x = x46_represent_interests, y = n)) +
+ geom_bar( stat="identity", fill="mediumorchid2") +
+  theme_bw()
+```
+ *Question 46: Mean = 0.667. Huge skew towards the positive response. 
+ 
+ 
+```{r}
+x47_counts <- scaled_sum %>% 
+ count(x47_represent_contributions)
+
+ggplot(data = x47_counts,
+       aes(x = x47_represent_contributions, y = n)) +
+ geom_bar( stat="identity", fill="olivedrab2") +
+  theme_bw()
+```
+*Question 47: Mean = 0.638. Well over 80% of respondents said "Yes" to representing contributions. 
+
+
+```{r}
+x52_counts <- scaled_sum %>% 
+ count(x52_ma_benefit_5yrs)
+
+ggplot(data = x52_counts,
+       aes(x = x52_ma_benefit_5yrs  , y = n)) +
+ geom_bar( stat="identity", fill="olivedrab3") +
+  theme_bw()
+
+
+```
+*Question 52: Mean = 0.506. For the first time, we see a lot of "unsure" answers. This likely has to do with uncertainty in projecting 5 years in the future. 
+
+```{r}
+x61a_counts <- scaled_sum %>% 
+ count(x61a_current_regulations)
+
+ggplot(data = x61a_counts,
+       aes(x = x61a_current_regulations, y = n)) +
+ geom_bar( stat="identity", fill="springgreen3") +
+  theme_bw()
+```
+*Question 61(a): Mean = 3.93, clear positive skew, and the mean seems to represent the mode and median*
+
+```{r}
+x61f_counts <- scaled_sum %>% 
+ count(x61f_rights_distribution_fair)
+
+ggplot(data = x61f_counts,
+       aes(x =x61f_rights_distribution_fair, y = n)) +
+ geom_bar( stat="identity", fill="skyblue") +
+  theme_bw()
+```
+*61(f): Mean = 3.805. More neutral responses that strongly agree, but very few disagreeing fishers.* 
+
+
+
+```{r}
+x62_counts <- scaled_sum %>% 
+ count(x62_reserve_compliance)
+
+ggplot(data = x62_counts,
+       aes(x =x62_reserve_compliance, y = n)) +
+ geom_bar( stat="identity", fill="indianred4") +
+  theme_bw()
+```
+Question 62: Mean = 0.525
+
+
+
+```{r}
+x64_counts <- scaled_sum %>% 
+ count(x64_wrong_fishing_reserve)
+
+ggplot(data = x64_counts,
+       aes(x =x64_wrong_fishing_reserve, y = n)) +
+ geom_bar( stat="identity", fill="chocolate4") +
+  theme_bw()
+```
+*Question 64: Mean = 3.957. Another mean between 3 and 4, with very small numbers of below-neutral responses*
 
 
