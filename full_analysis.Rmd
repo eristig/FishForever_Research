@@ -428,6 +428,11 @@ hhs_count_by_country <- hhs_complete_filtered %>%
   rename("Country" = country) %>% 
   rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
 
+summary_2 <- hhs_complete_filtered %>% 
+     count(country, level1_name, level2_name, ma_name) %>% 
+     #arrange(-n) %>% 
+     mutate(level1_name = fct_reorder(country, n, sum)) %>% 
+     adorn_totals("row")
 
 country_count_table <- knitr::kable(hhs_count_by_country, format = "html", caption = "Engagement and Agreement Country Summary") %>% 
   #column_spec(1, italic = TRUE) %>% 
