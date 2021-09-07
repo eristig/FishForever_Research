@@ -27,6 +27,10 @@ library(plotly)
 library(foreign)
 library(nnet)
 library(reshape2)
+library(vtable)
+library(stargazer)
+library(viridis)
+library(NbClust)
 
 ```
 
@@ -601,6 +605,28 @@ scaled_sum <- hhs_scaled %>%
 ```
 
 
+Quick Table of Index scores
+
+```{r}
+index_table_df <- scaled_sum %>% 
+  select(country, eng_mean, agree_mean) %>% 
+  rename("Relative Engagement Score" = eng_mean) %>% 
+  rename("Relative Agreement Score" = agree_mean)
+
+
+index_table_k <- knitr::kable(index_table_df, format = "html", caption = "Engagement and Agreement Index Scores") %>% 
+  row_spec(dim(index_table_df)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right")
+
+## collapse_rows(columns = 3, valign = "middle")
+
+index_table_k
+
+```
+
+
+
+
 With that, we'll make a preliminary graph: 
 
 
@@ -612,23 +638,38 @@ With that, we'll make a preliminary graph:
 labs( x = "Engagement (Scaled across 5 Questions)",
       y = "Agreement (Scaled across 9 Questions)",
       title = "Indices of Engagement and Agreement in Co-Managed Fisheries",
-      color = "Country"
-  
-) +
+      color = "Country") +
   theme_bw()
 
   
-ggplot(data = scaled_sum,
-       aes(x = eng_sum, y = agree_sum, color = country)) +
-  geom_point(size = 0.7, alpha = 0.7) +
+phil_scaled_graphable <- scaled_sum %>% 
+  filter(country == "PHL")
+
+
+ ggplot(data = phil_scaled_graphable,
+                      aes(x = eng_mean, y = agree_mean)) +
+  geom_point(aes(color = level2_name), size = 0.7, alpha = 0.7,
+             show.legend = TRUE) +
+labs( x = "Engagement (Scaled across 5 Questions)",
+      y = "Agreement (Scaled across 9 Questions)",
+      title = "Indices of Engagement and Agreement in The Phillipines", 
+      color = "Region") +
+  scale_color_viridis(discrete = TRUE, option = "D") +
   theme_bw()
+
+
+phil_graph
+
+## ggplot(data = scaled_sum,
+##       aes(x = eng_sum, y = agree_sum, color = country)) +
+## geom_point(size = 0.7, alpha = 0.7) +
+##  theme_bw()
   
 
-
-ggplot(data = scaled_sum,
-       aes(x = raw_eng_sum, y = raw_agree_sum, color = country)) +
-  geom_point(size = 0.7, alpha = 0.7) +
-  theme_bw()
+## ggplot(data = scaled_sum,
+##        aes(x = raw_eng_sum, y = raw_agree_sum, color = country)) +
+##   geom_point(size = 0.7, alpha = 0.7) +
+##  theme_bw()
 
 ```
 
@@ -657,22 +698,282 @@ We want to see actual levels of compliance, but this is the first analysis of it
 [https://stats.idre.ucla.edu/r/dae/multinomial-logistic-regression/]
 
 
+
+
+Making some tables and graphs for Claudia + Rare: 
+
+
+```{r}
+
+hhs_scaled_character <- hhs_scaled %>% 
+  as.character(c(24:28))
+  
+hhs_scaled_sum <- hhs_scaled %>%
+  select(24:28) %>% 
+  summarise_each(funs(min = min, 
+                      q25 = quantile(., 0.25), 
+                      median = median, 
+                      q75 = quantile(., 0.75), 
+                      max = max,
+                      mean = mean, 
+                      sd = sd))
+
+
+df_eng_stats <- data.frame(hhs_scaled) %>% 
+cols <- c(24:28)  
+stargazer(
+    df[, cols], type = "text", 
+    summary.stat = c("min", "p25", "mean", "p75", "max", "median", "sd"))
+
+## WE HAVE SOME STATS doube-checking to do. 
+
+## st(hhs_scaled,
+##     vars = 24:28,
+##     summ= list(c('mean(x)',
+##                  'median(x)')))
+
+
+
+
+
+
+```
+
+Great! 
+
+
+
+
+
+
+
+
 ##### Playing around with the Logit Model
 **Fully exploratory** 
 Do not sue the following as resuls
 ```{r}
 
- scaled_sum$eng_mean <- relevel(scaled_sum$eng_mean, ref = "-1.5")
-test_regression <- multinom(data = scaled_sum,
+
+
+  eng_regression_1 <- lm(data = scaled_sum,
                             eng_mean ~ x50_ma_punishment + 
                               x40_reserve_boundaries_aware)
+summary(eng_regression_1)
+
+
+### Let's do one with 3 ecological outcomes: 19, 22, 23
+
+eng_regression_2 <-  lm(data = scaled_sum,
+                            eng_mean ~ x19_current_fish_catch + x22_catch_5yrs + x23_job_secure)
+
+summary(eng_regression_2)
+
+## Here out outcome is a Z-score. with ordinal inputs, should we switch to 1-5? 
+```
+
+
+Let me see if there are some that could seem 'insightful' for a Rare audience to know -Like knowledge of rules! [Questions 38-40]
+
+Those questions are
+- Is fishing allowed in the reserve area? (Does fisher X know the rule?)
+- Would you agree with the statement that most fishers in your community are aware of the boundaries of the fisheries management/managed access area? (Do msot fishers know the rules)
+- Out of ten fishers in your community, how many would you guess know where the reserve boundary is?
+
+
+```{r}
+eng_regression_3 <-  lm(data = scaled_sum,
+                            eng_mean ~ x38_reserve_fishing_allowed + x39_ma_boundaries_aware + x40_reserve_boundaries_aware)
+
+summary(eng_regression_3)
+```
+
+I'll come back to the ln/multinom, etc. 
+
+First, let's look at a cluster analysis! 
+
+Within Engagement and Agreement- We want to see if there are common combinations of answers like "4, 5, 5" for a likert, or something like that. 
+
+
+
+Now, Clustering 
+
+I'm going to explore how many clusters we can see, and try and use a distance-based clustering method first. If possible we want to see common combinations of answers. 
+
+*I.e Within 5 questions, if there ae 250 fishers hat say "Yes," "Slightly agree," and "No," we can learn from that. 
+
+Using Basically, it's going to run 30 different ways of evaluating how many clusters it *thinks* exist, then tell you the breakdown of what they decide (e.g. "8 algorithms think that there should be 4 clusters").
+
+`NbClust::NbClust()`
+
+
+```{r}
+
+cluster_number_est <- NbClust(scaled_sum[24:28], min.nc = 2, max.nc = 8, method = "kmeans")
 
 
 ```
-FOR ERIN!
-Using `hhs_scaled` df
 
-Engagement is cols 24:28
-Agreement is 29:38, skip 31!
+So R has suggested that there are *4* meaningful clusters. 
+
+NOTE: We'll have to walk through the weights of 1-5 and -1/1 to having more meaningful analysis within clusters. this is BECAUSE we're not seeing even steps between each 'level up.' 
+
+For now, I run the clusters, and we can go back. 
+
+
+Looking at 4 clusters:
+
+```{r}
+
+### First I'll jsut select the engagement variables 
+
+engagement_only <- scaled_sum %>% 
+  select(24:28)
+
+engagement_km <- kmeans(engagement_only, 4) ## The 4 means the amount of clsuters we're looking at
+
+
+engagement_km
+
+```
+
+OK! That's a whole lot of information. 
+
+I'll look at a couple key factors
+
+- size
+- cluster (which clsuter each observation is in)
+
+
+```{r}
+engagement_km$size
+engagement_km$cluster
+
+##Making a "binding" df where the cluster of each obsevation is attached to it 
+
+engagement_cl <- data.frame(scaled_sum, cluster_no = factor(engagement_km$cluster))
+
+
+```
+
+Size of clusters: [1]  465  595 1229  729
+
+
+Now that these clusters are attached to each observation, let's visualize it 
+
+```{r}
+
+ggplot(engagement_cl) +
+  geom_point(aes(x = level2_name, y = eng_mean, color = cluster_no))
+
+```
+OK, honestly, I do NOT know how to cluster these. 
+
+
+We're going to come back to this! 
+
+Let's look at hierarchical clustering 
+
+
+Starting with the euclidean distances 
+
+```{r}
+
+##  Scaling the 5 engagement questions
+
+engagement_only_scaled <- engagement_only %>% 
+  scale()
+
+euc_distance_eng <- dist(engagement_only_scaled, method = "euclidean")
+
+euc_distance_eng
+
+hc_complete_engagement <- hclust(euc_distance_eng, method = "complete" )
+
+
+## Plotting this heirarchical cluster
+
+
+plot(hc_complete_engagement, cex = 0.6, hang = -1)
+
+```
+
+
+OK. I'm lost. 
+
+we're rwturning to this Tuesday. 
+
+
+
+###### Bar Graphs for each A & E Question
+
+**Engagement** 
+
+
+1. Question 44
+
+```{r}
+
+x44_counts <- scaled_sum %>% 
+ count(x44_meeting_attendance)
+
+ggplot(data = x44_counts,
+       aes(x = x44_meeting_attendance, y = n)) +
+ geom_bar( stat="identity", fill="goldenrod") +
+  theme_bw()
+```
+*Question 44:  Mean = 0.318, but nearly all respondents said Yes or No. Around 1200 responses did not attend meetings, will around 1600 do attend.*
+
+**Question 45**
+
+```{r}
+x45_counts <- scaled_sum %>% 
+ count(x45_leadership_position)
+
+ggplot(data = x45_counts,
+       aes(x = x45_leadership_position, y = n)) +
+ geom_bar( stat="identity", fill="red3") +
+  theme_bw()
+```
+*Question 45: Mean = -0.551. This mean shows that 3/4 of fishers responded "No" Few fisher households included someone with a leadership position within the fishery.*
+
+**Question 48**
+
+```{r}
+
+x48_counts <- scaled_sum %>% 
+ count(x48_enforcement_participation)
+
+ggplot(data = x48_counts,
+       aes(x = x48_enforcement_participation, y = n)) +
+ geom_bar( stat="identity", fill="chartreuse1") +
+  theme_bw()
+```
+*Question 48: Mean = -0.492. Nearly 3 out of 4 fishers do not participate in enforcement.*
+
+```{r}
+x53_counts <- scaled_sum %>% 
+ count(x53_encourage_regulations)
+
+ggplot(data = x53_counts,
+       aes(x = x53_encourage_regulations, y = n)) +
+ geom_bar( stat="identity", fill="lightblue") +
+  theme_bw()
+```
+*Question 53: Mean = -0.071. This is just below the "neutral" survey option. We see a very similar totals in the "strongly agree" and "strongly disagree." Our mean skews negative because around 100 more fishers wrote "disagree" relative to "agree."*    
+
+
+
+
+```{r}
+x61g_counts <- scaled_sum %>% 
+ count(x61g_fishing_change_behavior)
+
+ggplot(data = x61g_counts,
+       aes(x = x61g_fishing_change_behavior, y = n)) +
+ geom_bar( stat="identity", fill="seagreen2") +
+  theme_bw()
+```
+*Question 61(g) mean = 3.955. This is the first mean that really skews high. With a mode of 4, most respondents were at least "willing" to change their fishing behavior for the reserve structure.*
+
 
 
