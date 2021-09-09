@@ -338,7 +338,21 @@ NOTE TO DYL: Still need to go over Indonesia numbers with TQ.
 ##### Goal: Retain a robust set of answered questions, and increase N to several thousand. 
 
 
+First, let me get counts of the NAs that we are changing to neutral for Q 44 and 45: 
+
 ```{r}
+counts_44_45 <- hhs_all_complete %>% 
+  data.frame() %>% 
+  clean_names() %>% 
+  count(x44_meeting_attendance, x45_leadership_position) 
+```
+
+
+```{r}
+
+
+
+
  hhs_complete_filtered <- hhs_all_complete %>% 
   data.frame() %>% 
   clean_names() %>% 
@@ -372,7 +386,7 @@ x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement,
 x61h_individual_behavior,
 x61i_help_neighbors,
 x66_reaction_fishing_reserve, x66_response_fishing_reserve)) %>% 
- mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
+ # mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
    drop_na(24:28, 29, 30, 32:38) %>% 
     filter(x47_represent_contributions != "No management") %>% 
     filter(x53_encourage_regulations != "No regulations")  %>% 
@@ -384,6 +398,9 @@ x66_reaction_fishing_reserve, x66_response_fishing_reserve)) %>%
 
 - *For Questions 44 and 45* 
  I used mutate_at() to change NAs to 0s. right now it may looks weird, but soon it will all be zeroes and ones. These were only asked to "fisher households" and reduce N a lot. They pair with Questions 46 and 47 (also only asked to fisher households.) 
+ - I've since removed this (20 observation decrease.) I think it's better to be uniforrm with all these questions, since there really was a small number of such responses. 
+ 
+ 
 
 - *Regarding Question 61e* (Violations decrease profit)
 removing NA rows removes 3000 of our 3440 observations, we may just need to drop this question from the agreement index. [Talk to TQ!]
@@ -458,11 +475,11 @@ IS there a standard for measuring Qs against on another? Should we have our eyes
 IS -1 to 1 reasonable? What about using the likerts 
 
 
-Watch allison ordinal 
+
 ###### Agreement 
 
 
-I'll start converting the "easy" questions to 1s and 0s. 
+I'll start converting the straightforward questions to 1s and 0s. 
 **Because there was so much much dang coding in the global_filtered, I'll make a new dataframe for the numbered version. 
 We'll call it **hhs_filtered_numeric**
 
@@ -471,11 +488,13 @@ We'll call it **hhs_filtered_numeric**
 
 ###### Here are the breakdowns for each Engagement and Agreement question:
 
+
 ####### Engagement
 
+
 Apologies for listing these so many times, that will change in the final Rmd. 
-- 44: Yes/No 1/-1 (We recoded not sure to No, see Methods)
-- 45: Yes/No 1/-1 (We recoded 'Not sure to No, see Methods)
+- 44: Yes/No 1/-1 (We recoded not sure to 0, see Methods)
+- 45: Yes/No 1/-1 (We recoded 'Not sure to 0, see Methods)
 - 48: Yes/No/  Not Sure 1/0/-1 
 * Check amount of zeros for Q 48
 
@@ -590,6 +609,9 @@ Erin will tackle the PCA/logistic version thereof, I'm going to mess around with
 *Let's start with `sum()`* 
 
 Along with scaling the data onto a Z-Axis, I'm going to simply sum across the agreement and engagement columns too, to see what we get!
+- `eng_mean` is the mean index score of *engagement,* with 1 score for each fisher respondent
+- `agree_mean` is the mean score of *agreement* for each fisher respondent 
+- I add two more variables:  "raw_eng_sum" and "raw_agree_sum." Without scaling, I've summed agreement and engagement across rows, for exploratory visualization
 ```{r}
 
 
@@ -663,7 +685,7 @@ labs( x = "Engagement (Scaled across 5 Questions)",
   theme_bw()
 
 
-phil_graph
+
 
 ## ggplot(data = scaled_sum,
 ##       aes(x = eng_sum, y = agree_sum, color = country)) +
@@ -685,25 +707,55 @@ Action Items:
 
 - Sensitivity Analysis of Brazil
 
+```{r}
+brazil_sensitivity_test <- hhs_all_complete %>% 
+  filter(country == "BRA") %>% 
+  data.frame() %>% 
+  clean_names() %>% 
+ select(c(1:2, 6:18, 21:28, x44_meeting_attendance, x45_leadership_position,
+x48_enforcement_participation,  x53_encourage_regulations,
+ x61g_fishing_change_behavior,
+           x10_mpa_important, x43_ma_benefits, x43_ma_benefits_opinion, x46_represent_interests, x47_represent_contributions, x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61f_rights_distribution_fair, x62_reserve_compliance, x64_wrong_fishing_reserve)) %>% 
+mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
+   drop_na(24:28, 29, 30, 32:36) %>% 
+           #29, 30, 32:38)  
+    filter(x47_represent_contributions != "No management") %>% 
+    filter(x53_encourage_regulations != "No regulations")  %>% 
+    filter(x46_represent_interests != "No management") %>% 
+    filter(x52_ma_benefit_5yrs != "No management")
+ 
+```
+
+- There are 1592 observations from Brazil
+- When we filter out NAs for engagement questions, there are 1018
+- When we filter NAs for question 10 and 43, we have 1008 (no real difference)
+- Filtering 46, 47, 52, 43, 61a, 61f and we drop to 811 (still not bad)
+- but there is only ONE! observation from brazil that answered questions 62 and 64 (I wish we'd asked Courtney about this)
+
+Can we (responsibly) mark these folks as neutral? 
+*Means*
+62: 0.52 (3/4 of folks say they comply on -1/1 scale)
+64: 3.9/5 (Most fishers list fishing in the reserve as 'bad' or 'very bad')
 
 
-*If we assumed that this graph is what we want, where would we draw the lines for the different postures? 
 
-- IS it Okay to just model z-scores? 
+- Is it Okay to just model z-scores? 
 We want to see actual levels of compliance, but this is the first analysis of its type. We do not have objective "standards" where a fisher's response would change from reluctant to committed.
 
 
 
--Re: Logit, we'll easily be able to model how predictors impact agreement OR engagement, but to do both at the same time will be a challenge. 
+We'll run two different LN/Logit Models: one for agreement, one for engagement
 
--"Ordinal logistic regression: If the outcome variable is truly ordered and if it also satisfies the assumption of proportional odds, then switching to ordinal logistic regression will make the model more parsimonious."
+- "Ordinal logistic regression: If the outcome variable is truly ordered and if it also satisfies the assumption of proportional odds, then switching to ordinal logistic regression will make the model more parsimonious."
+
+- Linear regression will give us coefficients for categorical and ordinal questions, but I'll clean the bundles of questions that we want to analyze. 
 
 
 
 [https://stats.idre.ucla.edu/r/dae/multinomial-logistic-regression/]
 
 
-
+##### Statistical Summaries of Agreement and Engagement
 
 Making some tables and graphs for Claudia + Rare: 
 
@@ -725,14 +777,14 @@ hhs_scaled_sum <- hhs_scaled %>%
                       sd = sd))
 
 
-df_eng_stats <- data.frame(hhs_scaled) %>% 
+df_eng_stats <- data.frame(hhs_scaled) 
 cols <- c(24:28)  
 stargazer(
     df[, cols], type = "text", 
     summary.stat = c("min", "p25", "mean", "p75", "max", "median", "sd"))
 
 
-df_agree_stats <- data.frame(hhs_scaled) %>% 
+df_agree_stats <- data.frame(hhs_scaled) 
 cols <- c(29, 30, 32:38)  
 stargazer(
     df[, cols], type = "text", 
@@ -746,14 +798,18 @@ stargazer(
 ##                  'median(x)')))
 
 
-df_agree_stats
+
 
 
 ```
 
 Great! 
 
+`hhs_scaled` is the df that will be used for all analysis. 
 
+I've run `unique()` for all the E & A questions, ensuring that we only have responses that are measurable. 
+
+Following this with a check of the "no management" answers, and how they were coded. 
 
 
 ##### Playing around with the Logit Model
@@ -910,7 +966,7 @@ plot(hc_complete_engagement, cex = 0.6, hang = -1)
 
 OK. I'm lost. 
 
-we're rwturning to this Tuesday. 
+we're returning to this Tuesday. 
 
 
 
@@ -931,7 +987,7 @@ ggplot(data = x44_counts,
  geom_bar( stat="identity", fill="goldenrod") +
   theme_bw()
 ```
-*Question 44:  Mean = 0.318, but nearly all respondents said Yes or No. Around 1200 responses did not attend meetings, will around 1600 do attend.*
+*Question 44:  Mean = 0.138, but nearly all respondents said Yes or No. Around 1200 responses did not attend meetings, will around 1600 do attend.*
 
 **Question 45**
 
@@ -945,7 +1001,6 @@ ggplot(data = x45_counts,
   theme_bw()
 ```
 *Question 45: Mean = -0.551. This mean shows that 3/4 of fishers responded "No" Few fisher households included someone with a leadership position within the fishery.*
-
 
 
 **Question 48**
