@@ -369,7 +369,7 @@ x11k_months_other, x11k_other_source,
 x12a_fishing_men, x12b_fishing_women, x12c_fishing_children, 
 x19_current_fish_catch, 
 x22_catch_5yrs,                   
-x23_job_secure, 
+x23_job_secure, x26_fishing_income_save, x28_buyer_loans, x29_family_income,
 x30_trust_community,x30_trust_community_neighbors, x30_trust_fishers_community,
 x30_trust_fishers_other, x30_trust_local_decision,
 x30_trust_ngo, x30_trust_regional_decision, x30_trust_religious_leaders,
@@ -382,12 +382,12 @@ x50_ma_punishment,
 x51a_fishers_gear_not_permitted, x51b_fishers_reserves, 
 x51c_fishers_ma_area, x51d_fishers_violate_fish_size, x51e_fishers_caught,
 x55_worry_food, x55_worry_food,
-x56_reduce_meal_size_adult,  
+x56_reduce_meal_size_adult,  x59_food_procurement,
 x60_hh_fish_consumption,
 x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, 
 x61h_individual_behavior,
 x61i_help_neighbors,
-x66_reaction_fishing_reserve, x66_response_fishing_reserve, x62_reserve_compliance, x63_fishing_in_reserve, x64_wrong_fishing_reserve)) %>% 
+x66_reaction_fishing_reserve, x66_response_fishing_reserve, x62_reserve_compliance, x63_fishing_in_reserve, x64_wrong_fishing_reserve, x21_boat_owner_status)) %>% 
  # mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
    drop_na(24:33) %>% 
     filter(x53_encourage_regulations != "No regulations")  %>% 
@@ -414,56 +414,7 @@ Now  columns [24:33] within `hhs_complete_filtered` are all of the Engagement an
 
 - *For Q 46-47* we've excluded NAs since they mostly represent "non-fisher households" The difference in n goes from 5640 to ~3300. We want to see how *fishers* comply though. So the smaller N will show us that. 
 
-Let's just make a quick table with the *counts* of all the survey responses that we have for analysis. 
 
-```{r}
-hhs_filtered_count <- hhs_complete_filtered %>% 
-  count(ma_name) %>% 
-  arrange(-n) %>% 
-  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
-  adorn_totals("row") %>% 
-  rename("Managed Access Area" = ma_name) %>% 
-  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
-
-
-count_table <- knitr::kable(hhs_filtered_count, format = "html", caption = "Engagement and Agreement Summary") %>% 
-  #column_spec(1, italic = TRUE) %>% 
- # row_spec(dim(hhs_filtered_count)[1], bold = TRUE) %>%
-  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
-  collapse_rows(columns = 1, valign = "middle")
-
-count_table
-
-```
-
-
-Counts by Reserve is great, but Larissa would like the same table by *Country*
-
-```{r}
-
-hhs_count_by_country <- hhs_complete_filtered %>% 
-  count(country) %>% 
-  arrange(-n) %>% 
-  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
-  adorn_totals("row") %>% 
-  rename("Country" = country) %>% 
-  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
-
-summary_2 <- hhs_complete_filtered %>% 
-     count(country, level1_name, level2_name, ma_name) %>% 
-     #arrange(-n) %>% 
-     mutate(level1_name = fct_reorder(country, n, sum)) %>% 
-     adorn_totals("row")
-
-country_count_table <- knitr::kable(hhs_count_by_country, format = "html", caption = "Engagement and Agreement Country Summary") %>% 
-  #column_spec(1, italic = TRUE) %>% 
-  row_spec(dim(hhs_count_by_country)[1], bold = TRUE) %>%
-  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
-  collapse_rows(columns = 1, valign = "middle")
-
-country_count_table
-
-```
 
 
 
@@ -547,6 +498,60 @@ All "No management" or "No regulations" ar gone. and all 0s have been removed fr
 
 
 Now, I **believe** it's time to scale the data! 
+
+
+Let's just make a quick table with the *counts* of all the survey responses that we have for analysis. 
+
+```{r}
+hhs_filtered_count <- hhs_filtered_numeric %>% 
+  count(ma_name) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Managed Access Area" = ma_name) %>% 
+  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
+
+
+count_table <- knitr::kable(hhs_filtered_count, format = "html", caption = "Engagement and Agreement Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+ # row_spec(dim(hhs_filtered_count)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+count_table
+
+```
+
+
+Counts by Reserve is great, but Larissa would like the same table by *Country*
+
+```{r}
+
+hhs_count_by_country <- hhs_filtered_numeric %>% 
+  count(country) %>% 
+  arrange(-n) %>% 
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
+  adorn_totals("row") %>% 
+  rename("Country" = country) %>% 
+  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
+
+summary_2 <- hhs_complete_filtered %>% 
+     count(country, level1_name, level2_name, ma_name) %>% 
+     #arrange(-n) %>% 
+     mutate(level1_name = fct_reorder(country, n, sum)) %>% 
+     adorn_totals("row")
+
+country_count_table <- knitr::kable(hhs_count_by_country, format = "html", caption = "Engagement and Agreement Country Summary") %>% 
+  #column_spec(1, italic = TRUE) %>% 
+  row_spec(dim(hhs_count_by_country)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
+  collapse_rows(columns = 1, valign = "middle")
+
+country_count_table
+
+```
+
+
 
 
 ###### Scaling
@@ -638,8 +643,7 @@ index_table_k <- head(index_table_df) %>%
   kable_styling(bootstrap_options = "striped", 
                 full_width = F,
                 position = "left") %>% 
-collapse_rows(columns = 3, valign = "middle") %>% 
-  column_spec(1:3, border_right = TRUE, color = "black")
+collapse_rows(columns = 3, valign = "middle")
 
 index_table_k
 
@@ -894,11 +898,12 @@ Basically, it's going to run 30 different ways of evaluating how many clusters i
 
 
 
-Now I'll do K-means clustering again, but include agreement AND engagement questions.
+Now I'll do K-means clustering to include agreement AND engagement questions.
 
 ```{r}
 agree_engage_only <- scaled_sum %>% 
   select(24:33)
+
 
 
 # NbClust(agree_engage_only[1:10], min.nc = 2, max.nc = 8, method = "kmeans")
@@ -925,16 +930,20 @@ set.seed(1)
                 position = "left") %>% 
 collapse_rows(columns = 3, valign = "middle") 
 
+  
+kmeans_kable
+  
 ```
-There are *either* 2 or 5! 
-574, 853, 731, 1369, 922
+There are 5 clusters! 
+
+Sizes: 701  842  936 1350  620
 
 ##### Comparing clusters 
 1 and 2 seem similar, with high levels of A and E
 - 44: 0.44 (C1) and 0.86 (C2) Cluster 2 attends more meetings
 - 45 is a big swing, cluster 2 is 0.87, and C1 is -0.85. These are the leaders!
 - 48: -0.44 and 0.35 is a decent difference in enforcement
-BUT c1 is more likely to encourage regulations (1.21 v 0.5)
+BUT C1 is more likely to encourage regulations (1.21 v 0.5)
 -61 is closer (4.5 and 4.1)
 
 Within agreement they're more similar. but C1 is higher average in each of the 5 questions. Less leaders, but agree more across the board. 
@@ -953,6 +962,7 @@ but C3 is the least likely of any group to encourage regulations. Perhaps we're 
 
 
 C5 is looking at 2/5 for questions 61a and 61f, and is also by far the lowest for 46 and 52. within agreement, only in MA benefits are they somewhat close to other clusters. They do have a few more leaders than other clusters though. But overall, very much not attending
+
 
 
 
@@ -985,7 +995,7 @@ ggplot() +
            size = 6, shape = "triangle", show.legend = FALSE) +
   labs( x = "Agreement (Scaled across 6 Questions)",
       y = "Engagement (Scaled across 5 Questions)",
-      title = "Mapping Clusters", 
+      title = "Mapping Clusters",
       color = "Cluster") +
   scale_x_continuous(limits = c(-3, 2),
                      breaks = c(-2, -1, 0, 1, 2)) +
@@ -994,83 +1004,76 @@ ggplot() +
    guides(colour = guide_legend(override.aes = list(size=7))) 
 
 ```
+```{r}
+x45_clustered <- agree_engage_cl %>% 
+  group_by(cluster_no) %>% 
+  count(x45_leadership_position)
+```
+
+```{r}
+
+x63_clusters <- agree_engage_cl %>% 
+  filter(x63_fishing_in_reserve == "1")
+
+ggplot(data = x63_clusters, aes(x = agree_mean, y = eng_mean,
+           color = cluster_no, shape = x64_wrong_fishing_reserve),
+           size = 0.7, alpha = 0.7) +
+  geom_point(size = 6) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mapping Clusters of Rule-breakers",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7))) 
+
+
+
+```
+
+
+
 
 Right away this is really interesting!
 
 *Cluster 1* 
- Only 1 observation is below -1 in agreement. Most of the *fully-agreeing* fishers are in cluster two - but not all! It excludes the agreeing, but rather unengaged fishers. Similarly, it omits the super-engaged. We can describe C2 (so far) as fishers who are very on board with rules, but are a bit above average engagement. 
-Centers = 0.3930240, 0.448207772 (Engagement, Agreement)
+ Only 1 observation is below -1 in agreement. Most of the *fully-agreeing* fishers are in cluster two - but not all! It excludes the agreeing, but rather unengaged fishers. Similarly, it omits the super-engaged. We can describe C1 (so far) as fishers who are very on board with rules, but are a bit above average engagement. 
+Centers = (0.448207772, 0.3930240) (Agreement, Engagement)
 N = 701
 
 
 *Cluster 2* 
 These are all the *super-engaged* fishers. Agreement ranges from 1 (the maximum) to -1.4. 
-Center = (0.8606600, 0.156193496 (Engagement, Agreement) 
+Center = (0.156193496, 0.8606600) (Agreement, Engagement) 
 N = 842
 
 *Cluster 3*
 This is the largest spread of any cluster. We have some fully-agreeing fishers, and at least 1 or 2 with agreement below 1.5. Engagement grows up to 1.5, which is mostly reserved for the high-engaging clusters. With means SO close to 0, we see this as a the most average cluster. A bit less engaged, and agreeing with as much as the average fisher from the study. 
-Center = (-0.1748106, 0.002805289) (Engagement, Agreement)
+Center = (0.002805289, -0.1748106) (Agreement, Engagement)
 N = 936
 
 *Cluster 4* 
-Its center is quite close to Cluster 3, but we can see clear differences when we look at the spread. These folks do NOT engage. While there as unengaged as the Resistant fishers, but most actually agree quite a lot. This includes some with A = 1, the max. 
-Center = (-0.4098127,  0.052635489) (Engagement, Agreement)
+Its center is very close to Cluster 3, but we can see clear differences when we look at the spread. These folks do NOT engage. While there as unengaged as the Resistant fishers, but most actually agree quite a lot. This includes some with A = 1, the max. 
+Center = (0.052635489, -0.4098127) (Agreement, Engagement)
 N = 1350, largest cluster
 
 
 
 *Cluster 5 - Resistant*
 This is the classically known group of unengaged, disagreeing fishers. Many of the outliers are from Honduras, but the country variable doesn't explain the entire cluster. They all disagree, but to varying levels. We'll look at their distinguishing characteristics. 
-Center = (-0.4569608,  -0.837729407) (Engagement, Agreement)
+Center = (-0.837729407, -0.4569608) (Agreement, Engagement)
 N = 620, smallest cluster. 
 
 
 
 
-
-
-
-**Quickly, I'll look at the primary graph with 2 clusters.**
-
-```{r}
-agreement_engagement_km_2 <- kmeans(agree_engage_only, 2)
-
-## The 5 means the amount of clusters we're looking at
-
-
-  agreement_engagement_km_2
-  
-  agree_engage_cl_2 <- data.frame(scaled_sum, cluster_no = factor(agreement_engagement_km_2$cluster))
-  
-  
-  ggplot() +
-  geom_point(data = agree_engage_cl_2,
-       aes(x = agree_mean, y = eng_mean,
-           color = cluster_no),
-           size = 0.7, alpha = 0.7) +
-  labs( x = "Agreement (Scaled across 6 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "2 Cluster TEST MAP", 
-      color = "Cluster") +
-  scale_x_continuous(limits = c(-3, 2),
-                     breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2)) +
-   guides(colour = guide_legend(override.aes = list(size=7))) 
-
-  
-  
-  
-```
-Ok, this doesn't really tell us much! 
-
-
 ```{r}
 ggplot(data = agree_engage_cl,
        aes(x = country, y = eng_mean, color = cluster_no)) +
-  geom_point(size = 0.7) +
-  geom_jitter() +
+  geom_point(size = 0.4) +
+  geom_jitter(size = 0.4) +
    guides(colour = guide_legend(override.aes = list(size=7)))
 
 ```
@@ -1104,14 +1107,15 @@ Male mean =  (0.04032597, 0.02179388)
 This was not the case before! Were all within 0.1 of zero, to be clear. But when we add Brazil, the mean for men increases
 
 
+* Agreement-onyl clusters, not in use.*
 Comparing the clusters, by raw questions: 
 
 ```{r}
-comparing_clusters <- agree_engage_cl %>% 
-  select(x44_meeting_attendance, x45_leadership_position,
-x48_enforcement_participation,  x53_encourage_regulations,
- x61g_fishing_change_behavior,
-            x43_ma_benefits, x46_represent_interests,  x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61f_rights_distribution_fair, cluster_no) 
+# comparing_clusters <- agree_engage_cl %>% 
+#   select(x44_meeting_attendance, x45_leadership_position,
+# x48_enforcement_participation,  x53_encourage_regulations,
+#  x61g_fishing_change_behavior,
+#             x43_ma_benefits, x46_represent_interests,  x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61f_rights_distribution_fair, cluster_no) 
 
 
 
@@ -1140,23 +1144,10 @@ x48_enforcement_participation,  x53_encourage_regulations,
 ```
 
 ```{r}
-agree_cl <- data.frame(scaled_sum, cluster_no = factor(agreement_km$cluster))
+# agree_cl <- data.frame(scaled_sum, cluster_no = factor(agreement_km$cluster))
 ```
 
 7 machines said there are two clusters, I'm going to run this as well and compare a little: 
-
-
-
-
-
-
-Graphing 3 Clusters
-```{r}
-ggplot(data = agree_cl,
-       aes(x = country, y = agree_mean, color = cluster_no)) +
-  geom_jitter()
-```
-
 
 
 
@@ -1239,6 +1230,8 @@ A subset of quite agreeing, and somewhat engaged fishers.
 
 
 
+
+
 Cluster 2 
 ```{r}
 c_2_mean <- cluster_2_df %>% 
@@ -1267,17 +1260,11 @@ ggplot() +
    guides(colour = guide_legend(override.aes = list(size=7)))
 ```
 Counts: 
-BRA: 27
-FSM: 1
-IDN: 35
-MOZ:353
-PHL: 483
-PLW: 12
+BRA 25, HND 29, IDN 33, MOZ 322, PHL 422
 
 
 Notes:
-We see that this is determined by low engagement, but decent to high agreement. The cluster ranges from -1 to 1 on agreement. These folks are OK with rules for the most part. However, they don't take part in the management process
-
+Committed fishers, easily the highest engaging group. Like C1, has a good chunk of high-agreeing fishers also. Those top engagement scores seem to come from nearly all countries (less from Honduras.)
 
 
 
@@ -1287,6 +1274,10 @@ Cluster 3
 c_3_mean <- cluster_3_df %>% 
   summarise(eng_mean = mean(eng_mean),
                   agree_mean  = mean(agree_mean))
+
+c3_country_counts <- cluster_3_df %>% 
+  count(country)
+
 
 ggplot() +
   geom_point(data = cluster_3_df,
@@ -1307,13 +1298,11 @@ ggplot() +
    guides(colour = guide_legend(override.aes = list(size=7)))
 ```
 Notes: 
+
 Just as with the full graph, this has the most spread, centered very close to (0,0.)
-on Engagement we se -1 up to 0.5 and -0.5 to 1 with agreement. 
+on Engagement we see -1 up to 0.5 and -0.5 to 1 with agreement. 
 
-
-
-
-
+BRA 67, FSM 1, HND 34, IDN 18, MOZ 25, PHL 783, PLW 8
 
 
 Cluster 4
@@ -1349,16 +1338,10 @@ ggplot() +
 ```
 
 
-Notes: 0 engagement is the floor. These folks are engaged. We see a maximum engagement score of 1. I'll investigate what question responses determine this. 
-BRA: 26
-FSM: 3
-FSM: 
-HND: 27
-IDN: 31
-MOZ: 300
-PHL: 588
-PLW: 14
+otes: We see that this is determined by low engagement, but decent to high agreement. The cluster ranges from -1 to 1 on agreement. These folks are OK with rules for the most part. However, they don’t take part in the management process. More than ⅓ of all Brazil’s respondents are in this cluster. 
 
+
+BRA 283, FSM 6, HND 126, IDN 32, MOZ 167, PHL 731, PLW 5
 
 
 *Cluster 5*
@@ -1399,7 +1382,8 @@ ggplot() +
 ```
 *Resistant Fishers* 
 
-With a mean at (-0.5, -8) this is a disagreeing, unengaged group, including some crazy disagreeing outliers, from Honduras. There are a chunk of observations above 0 in engagement, but only 1 on the agreement axis. 
+With a mean at (-0.5, -.8) this is a disagreeing, unengaged group, including some crazy disagreeing outliers, from Honduras. There are a chunk of observations above 0 in engagement, but only 1 on the agreement axis.
+N = 620, smallest cluster. 
 
 
 
@@ -1503,11 +1487,7 @@ cl_hond_count <-
 ```
 Counts: 
 
-C1: 47 (14%)
-C2: 29  (8%)
-C3: 34 (11%)
-C4: 126 (38%)
-C5: 34 (29%)
+
 
 ```{r}
 cl_micro <- agree_engage_cl %>% 
@@ -1561,19 +1541,49 @@ cl_moz_count <-
   cl_moz %>% 
   count(cluster_no)
 ```
-Counts:
-C1: 48 (7%)
-C2: 322 (48%)
-C3: 25  (3%)
-C4: 167 (24%) 
-C5: 108 (16%)
-(670 total)
+
+
+```{r}
+cl_brazil <- agree_engage_cl %>% 
+  filter(country == "BRA")
+
+bra_counts <- cl_brazil %>% 
+  count(cluster_no)
+
+
+ggplot(cl_brazil,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Brazil Cluster Map", 
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7)))
+
+cl_bra_count <- 
+  cl_brazil %>% 
+  count(cluster_no)
+```
+
+
+
+
+
+##### Exploring relations between clusters and other variables (Plus hypotheses)
+
+
+
+
+
+
 
 
 ###### Engagement-Only Clustering
-
-
-
+*This is not part of our continuing analysis*
 ```{r}
 
 # cluster_number_est <- NbClust(scaled_sum[24:28], min.nc = 2, max.nc = 8, method = "kmeans")
@@ -1606,6 +1616,7 @@ Looking at 3 clusters:
 
 OK! That's a whole lot of information. 
 
+
 I'll look at a couple key factors
 
 - size
@@ -1631,23 +1642,19 @@ Now that these clusters are attached to each observation, let's visualize it
 ```{r}
 
 # ggplot(engagement_cl) +
-  geom_point(aes(x = agree_mean, y = eng_mean, color = cluster_no),
-             size = 0.7) +
-  labs( x = "Agreement (Scaled across 5 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "Mapping Clusters of Engagement", 
-      color = "Cluster") +
-  scale_x_continuous(limits = c(-3, 2),
-                     breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2))
+  # geom_point(aes(x = agree_mean, y = eng_mean, color = cluster_no),
+  #            size = 0.7) +
+  # labs( x = "Agreement (Scaled across 5 Questions)",
+  #     y = "Engagement (Scaled across 5 Questions)",
+  #     title = "Mapping Clusters of Engagement", 
+  #     color = "Cluster") +
+  # scale_x_continuous(limits = c(-3, 2),
+  #                    breaks = c(-2, -1, 0, 1, 2)) +
+  #  scale_y_continuous(limits = c(-1.5, 2),
+  #                    breaks = c( -1, 0, 1, 2))
 
 ```
 This is great, let's map them over country and reserve as well. 
-
-
-
-
 
 
 
@@ -1656,7 +1663,11 @@ This is great, let's map them over country and reserve as well.
 
 
 ```{r}
+ engagement_only <- scaled_sum %>% 
+  select(24:28)
+
 corrplot(cor(engagement_only), main = "Engagement Question Correlations")
+
 ```
 When running a correlation of all the *Engagement* questions, we see very little correlation across the different questions. We see correlations around 0 and 0.3, with no negative correlations. We find the *largest* correlation between questions 45 and 48 (0.5). 
 
@@ -1665,6 +1676,8 @@ Let's do the same with agreement, and all compliance questions together.
 
 
 ```{r}
+
+
 corrplot(cor(agree_scaled_sum), main = "Agreement Question Correlations")
 ```
 
@@ -1676,6 +1689,10 @@ Let's look at agreement AND engagement. This will look messy at first.
 ```{r}
 corrplot(cor(agree_engage_only), main = "Agreement + Engagement Question Correlations")
 ```
+
+
+
+
 
 Here, we see nothing new, which is interesting! There are no strong correlations across Engagement and Agreement. 
 This suggests that they are genuinely different measurements of compliance. 
@@ -1885,4 +1902,404 @@ ggplot(data = x64_counts,
 ```
 *Question 64: Mean = 3.957. Another mean between 3 and 4, with very small numbers of below-neutral responses*
 
+
+
+##### Visualizing Variables outside of compliance, against clusters: 
+
+
+```{r}
+
+
+
+enforcement_df <- agree_engage_cl %>% 
+  select(eng_mean, agree_mean, cluster_no, x49_enforcement_responsible, x51b_fishers_reserves, country) %>% 
+filter(x49_enforcement_responsible %in% c("Fisheries Management Body",
+                                         "Subnational Government",
+                                         "No enforcement system",
+                                         "Myself",
+                                         "Other", na.rm = FALSE))
+
+### To make a grouped bar chart, I want counts for each cluster
+
+
+enforcement_counts <- enforcement_df %>% 
+  select(eng_mean, agree_mean, cluster_no, x49_enforcement_responsible, x51b_fishers_reserves, country) %>% 
+  group_by(x49_enforcement_responsible) %>% 
+  count(cluster_no)
+
+  
+  
+  
+  
+#  recode_factor(`44_meeting_attendance`, "" = "Fisheries Management Body"))
+# recode_factor(`44_meeting_attendance`, "" = "Fisheries Management Body"))
+# recode_factor(`44_meeting_attendance`, "" = "Fisheries Management Body"))
+# recode_factor(`44_meeting_attendance`, "Subnational Government,Fisheries Management Body" = "Fisheries Management Body"))
+
+
+### Data cleaning
+
+
+
+
+ggplot(enforcement_counts,
+       aes(x = x49_enforcement_responsible, y = n, fill = cluster_no)) +
+  geom_bar(position="fill", stat="identity") +
+  labs( x = "Enforncement Responsibility",
+      y = "Cluster",
+      title = "Enforcement By Cluster", 
+      color = "Cluster") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+
+  # scale_x_continuous(limits = c(-3, 2),
+  #                    breaks = c(-2, -1, 0, 1, 2)) +
+  #  scale_y_continuous(limits = c(-1.5, 2),
+  #                    breaks = c( -1, 0, 1, 2)) +
+
+
+```
+What do we see??
+
+Dyl hypothesis: National government would show us less engaged fishers
+
+- Cluster 1's largest porpotion is within the smaller "Myself" group
+- Cluster 1 is *smaller* for FMP than sub-national and national government (suprised me)
+- "No enforcement" gives us the largest contingent of resistant fishers 
+- Cluster 3 (who attend but do not encourage rules) is tiny within "No Enforcement" 
+- Cluster 3 is large when the subnational government is responsible for enforcing (perhaps they attend, but don't see any impetus on fishers to do anything more)
+- C2 (leaders, very engaged) are are the largest contingent when FMB is responsible for enforcement (this makes sense)
+
+
+
+
+
+```{r}
+
+comparing_enforcement <- enforcement_df %>% 
+  filter(x49_enforcement_responsible %in% c("Fisheries Management Body",
+                                         "Subnational Government",
+                                         "National Government", na.rm = FALSE))
+
+
+
+ggplot(data = comparing_enforcement) +
+  geom_point(aes(x = agree_mean, y = eng_mean, color = cluster_no), size = 0.6) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  labs( title = "Three Main Enforcement Responsibilities") +
+  facet_wrap(~x49_enforcement_responsible)
+
+```
+Color-blind Dyl here, uh oh! I'm going to need to see some tables 
+FMP has fewer fishers who heavily disagree. That said, I can't see much from these graphs so far, other than the interpretations from the bar graph.  
+
+
+
+OK! Dad wants to see boat ownership 
+Hypothesis: Fishers without boats are less likely to engage
+
+```{r}
+boat_ownership <- agree_engage_cl %>% 
+  select(eng_mean, agree_mean, x21_boat_owner_status, cluster_no, x23_job_secure, country)
+
+boat_counts <- boat_ownership %>% 
+  group_by(cluster_no) %>% 
+  count(x21_boat_owner_status)
+
+
+ggplot(boat_counts,
+       aes(x = x21_boat_owner_status, y = n, fill = cluster_no)) +
+  geom_bar(position="fill", stat="identity") +
+  labs( x = "Boat Ownshership",
+      y = "Cluster",
+      title = "Oh, you got a boat?", 
+      color = "Cluster") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+
+
+```
+
+*Visual Interpretation*
+
+- When the collective owns a boat, C4 dominates, C2 (super-engaged) shrinks
+- When fishers share boats "as an employee" (meaning their boss owns a boat?) there are more resistant fishers. 
+- Fishers who own their own boat have a larger contingent of Cluster 1
+- Renters are the most "super-engaged" (C2) and least resistant (C5)
+
+Let's break this down by country, to check if boat status and country are heavily correlated 
+
+```{r}
+
+boats_by_country <- boat_ownership %>% 
+  filter(country != "PHL") %>% 
+  group_by(x21_boat_owner_status) %>% 
+  count(country)
+
+ggplot(boats_by_country,
+       aes(x = x21_boat_owner_status, y = n, fill = country)) +
+  geom_bar(position="fill", stat="identity") +
+  labs( x = "Boat Ownshership",
+      y = "Country",
+      title = "Who got boats?", 
+      color = "Country") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+```
+A lot of renting on Honduras! 
+Mozambique and Brazil have a lot of collective ownership 
+Brazil also has a lot of boat owners 
+Mozambique has the highest percentage of fishers who fish without boats, even more than Brazil (where I know many fishers collect crabs and other invertibrates)
+
+
+*Visualizing Need + Food Security* 
+
+
+**HHS questions that relate to Need**
+
+- Question #23: "Do you believe that the job of a fisher is secure in the future?"  
+- Question #26: "Does your income provide enough to save?"
+- Question #28: "Does your household take out loans from fish buyers or traders?"
+- Question #29: "To cover family needs your household income is…"
+- Question #54: "How do you rate the last year in terms of food availability?"
+- Question #55: "Consider the following statement: ”I worry about not having enough food for everyone in the household” Was that often, sometimes or never true for you in the last 12 months?" 
+- Question #59: "Are you confident that you will be able to procure enough food for you and your family for the next 12 months?" 
+- Question #60: In the last 12 months, how often did your household eat fish?
+
+
+Starting with 55 and 56
+
+```{r}
+food_security <- agree_engage_cl %>% 
+  select(country, cluster_no, x23_job_secure, x26_fishing_income_save, x28_buyer_loans, x29_family_income, x55_worry_food, x59_food_procurement, x60_hh_fish_consumption, eng_mean, agree_mean) %>% 
+  drop_na()
+```
+
+This is going to be a bunch of visuals, and some comparison to see what's actually shown in the data. 
+
+Dyl's hypotheses: 
+- Fishers with limited funds are less engaged, but vary evenly across agreement
+- Fishers who eat lots of seafood are more engaged than those who don't 
+- Cluster 1 (agreers) make more money than Cluster 2 (super-engaged)
+
+
+```{r}
+ggplot(food_security,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Food Security Ability", 
+      color = "Cluster", 
+      caption = "Hypothesis: Food Insecure (0) are found in clusters 3 and 4") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  facet_wrap(~x23_job_secure)
+
+
+job_security_counts <- food_security %>% 
+  group_by(cluster_no) %>% 
+  count(x23_job_secure) 
+```
+Cluster 1: 66% job secure
+Cluster 2: 72% job secure
+Cluster 3: 55% job secure
+Cluster 5: 46% job secure
+
+
+
+Question 29 "To cover family needs
+your household income
+is…"  [Sufficient, Tight, Insufficient]
+```{r}
+ggplot(food_security,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Ability to cover family costs", 
+      color = "Cluster", 
+      caption = "Hypothesis: Those with sufficient funds engage more, agree similarly") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  facet_wrap(~x29_family_income)
+
+
+
+income_counts <- food_security %>% 
+  group_by(cluster_no) %>% 
+  count(x29_family_income)
+```
+Let's look at some count numbers (percentages are numbers!)
+
+C1: 27% Insufficient, 15% sufficient, 57% Tight      671 total
+C2: 25% Insufficient, 21% Sufficient, 54% Tight   780 total
+C3: 26% Insufficient, 10% Sufficient, 63% Tight    887 total
+C4: 11% Insufficient, 17% Sufficient, 70% Tight     1241 total
+C5: 21% Insufficient, 21% Sufficient, 58% tight    584 total
+
+
+Since need (so far) isn't correlating much with any particular level of compliance, let's see how people who are dependent on seafood comply: 
+
+
+```{r}
+
+
+seafood_clean <- food_security %>% 
+  drop_na(x60_hh_fish_consumption)
+
+ggplot(seafood_clean,
+       aes(x = agree_mean, y = eng_mean, color = x60_hh_fish_consumption)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Seafood Dependence", 
+      color = "Cluster", 
+      caption = "Hypothesis: People who eat more fish are more engaged") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) 
+
+
+
+seafood_counts <- seafood_clean %>% 
+  group_by(cluster_no) %>% 
+  count(x60_hh_fish_consumption) %>% 
+ pivot_wider(names_from = cluster_no, values_from = n) %>% 
+  rename('Cluster 1' = '1', 'Cluster 2' = '2', 'Cluster 3' = '3', 'Cluster 4' = '4', 'Cluster 5' = '5')
+
+
+```
+
+Even looking at counts, we're seeing another variable without any correlation - this si kinda crazy! 
+
+What if - nothing really drives compliance behaviors other than simply attitudes about compliance? 
+
+... There are plenty more variables to explore before we truly wonder that, though. 
+
+Let's look at `x55_worry_food` 
+```{r}
+
+
+
+ggplot(food_security,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Financial Insecurity", 
+      color = "Cluster", 
+      caption = "Hypothesis: Food insecurity = less agreeing") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  facet_wrap(~x55_worry_food) +
+   scale_color_discrete("blue", "goldenrod", "red4", )
+
+
+```
+
+Alright, now we see some spread. 
+
+Those who "often" worry about food are MORE engaged and also the most resistant. 
+
+This is challenging because there is a far larger N within "sometimes," but we can compare the differences of "Never" and "Often." Never has some very disagreeing fishers, who engage a little (willing to change behavior, likely) 
+
+Those who often worry about food have a lot of somewhat engaged, rather agreeing folks. Let's do some stats here. He
+
+
+
+
+
+##### Corrplots for many variables 
+
+
+```{r}
+
+first_correlate_df <- agree_engage_cl %>% 
+  select(cluster_no, agree_mean, eng_mean, x55_worry_food, x11b_income_harvesting, x11c_income_fishing_artisanal, x11d_income_fishing_industrial, x11e_income_buying_trading, x11f_income_processing, x11g_income_aquaculture, x11h_income_extraction, x11i_income_tourism, x38_reserve_fishing_allowed, x39_ma_boundaries_aware, x50_ma_punishment, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61h_individual_behavior, x61i_help_neighbors, x62_reserve_compliance, x63_fishing_in_reserve, x64_wrong_fishing_reserve, x50_ma_punishment, x55_worry_food, x59_food_procurement) %>% 
+ 
+   mutate(x39_ma_boundaries_aware = recode_factor(x39_ma_boundaries_aware, 
+      "Strongly agree" = 5,
+      "Agree" = 4,
+      "Neither" = 3,
+      "Disagree" = 2, 
+      "Strongly disagree" = 1)) %>% 
+  filter(x39_ma_boundaries_aware != c("No reserve", "No managed access", "NA")) %>% 
+  filter(x50_ma_punishment != c("No management", "NA", "na")) %>% 
+  mutate(x50_ma_punishment = recode_factor(x50_ma_punishment,
+                          "Severe"= 5,
+                          "Strong" = 4, 
+                          "Moderate" = 3, 
+                          "Weak" = 2,
+                          "No punishment" = 1)) %>% 
+  drop_na(x55_worry_food) %>% 
+  mutate(x55_worry_food = recode_factor(x55_worry_food, 
+                                        "Often" = 1,
+                                        "Sometimes" = 0, 
+                                        "Never" = -1)) %>% 
+  drop_na(x59_food_procurement) %>% 
+  mutate(x59_food_procurement = recode_factor(x59_food_procurement,
+                                              "Certain" = 5,
+                                              "High chance" = 4, 
+                                              "Uncertain" = 3,
+                                              "Not confident" = 2, 
+                                              "Confident not" = 2, 
+                                              "Very confident not" = 1,
+                                              "Very not confident" = 1)) %>% 
+  mutate(x39_ma_boundaries_aware = as.numeric(x39_ma_boundaries_aware)) %>% 
+  mutate(x50_ma_punishment = as.numeric(x50_ma_punishment)) %>% 
+  mutate(x55_worry_food = as.numeric(x55_worry_food)) %>% 
+  mutate(x59_food_procurement = as.numeric(x59_food_procurement)) %>% 
+  mutate(cluster_no = as.numeric(cluster_no)) %>% 
+  mutate(x64_wrong_fishing_reserve = as.numeric(x64_wrong_fishing_reserve)) %>% 
+  mutate(x62_reserve_compliance = as.numeric(x62_reserve_compliance))
+
+
+
+
+# x39 was changed to 1-5, NAs dropped
+# x50 was changed to 1-5, NAs dropped
+# x55 changed to -1/1, NAs dropped
+# x59 changed to  1-5, NAs dropped
+
+
+
+
+corr_1 <-  corrplot(cor(first_correlate_df, use="pairwise.complete.obs"), main = "Lots of variables")
+
+
+```
+
+Making a table of all these variables, by cluster 
+
+
+```{r}
+longer_corr_df <- first_correlate_df %>% 
+group_by(cluster_no) %>% 
+  summarise_at(vars(1:23), funs(mean(., na.rm=TRUE))) 
+
+ cluster_iv_kable <- head(longer_corr_df) %>% 
+ kable( format = "html", caption = "Summary of Clusters") %>% 
+   kable_styling(bootstrap_options = "striped", 
+                full_width = F,
+                position = "left") %>% 
+collapse_rows(columns = 3, valign = "middle") 
+
+cluster_iv_kable
+ 
+```
 
