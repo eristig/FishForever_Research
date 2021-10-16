@@ -1,0 +1,66 @@
+---
+title: "Joining MAA and reserve datasets"
+author: "Larissa Neilson"
+date: "10/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+```{r}
+hhs_all_complete <- read_csv(here("new_portal_data", "hhs_all_complete.csv"))
+reserves_list <- read_csv(here("Reserves in MAs.csv"))
+```
+
+```{r}
+# Get list of all MAAs  by country
+summary <- hhs_all_complete %>% 
+  count(country, level1_name, level2_name, ma_name) %>% 
+  select(-n) %>% 
+  mutate(ma_name_new = ma_name)
+
+# Recode MAA names to match reserves list (sigh)
+summary <- summary %>%
+  mutate(ma_name_new = recode(ma_name,
+                              "Kolonia - Nett" = "KoloniaNett",
+                              "Kitti" = "Kiti",
+                              "Santa Fé" = "Santa Fe",
+                              "Puerto Cortés" = "Puerto Cortes",
+                              "SDN_Burgos" = "Burgos",
+                              "SDN_Dapa" = "Dapa",
+                              "SDN_DelCarmen" = "Del Carmen",
+                              "SDN_GL" = "General Luna",
+                              "SDN_SanBenito" = "San Benito",
+                              "SDN_SanIsidro" = "San Isidro",
+                              "SDN_SantaMonica" = "Santa Monica (Sapao)",
+                              "SDN_Socorro" = "Socorro",
+                              "Cebu_Pilar" = "Pilar",
+                              "Cebu_Poro" = "Poro",
+                              "Cebu_SanFrancisco" = "San Francisco",
+                              "Cebu_Tudela" = "Tudela",
+                              "Antique_Culasi" = "Culasi",
+                              "Antique_Libertad" = "Libertad",
+                              "Antique_Pandan" = "Pandan",
+                              "Antique_Sebaste" = "Sebaste",
+                              .default = ma_name)) %>% 
+  select(-ma_name)
+
+# Rename column to join by
+reserves_list <- reserves_list %>%
+  rename(ma_name_new = maa) 
+
+# Join to reserves list
+maa_reserves_list <- left_join(summary, reserves_list, by = "ma_name_new") %>% 
+  select(-region, -country.y)
+
+# Export new .csv
+write.csv(maa_reserves_list, file = "maa_reserves_list.csv")
+
+```
+
+
