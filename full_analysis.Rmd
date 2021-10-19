@@ -33,6 +33,7 @@ library(viridis)
 library(NbClust)
 library(car)
 library(corrplot)
+library(RColorBrewer)
 ```
 
 ## R Markdown
@@ -1010,6 +1011,35 @@ x45_clustered <- agree_engage_cl %>%
   count(x45_leadership_position)
 ```
 
+
+Clusters with question 64: How wrong is fishing in the reserve? 
+
+```{r}
+
+ggplot() +
+  geom_point(data = agree_engage_cl,
+       aes(x = agree_mean, y = eng_mean,
+           color = cluster_no, alpha = x64_wrong_fishing_reserve),
+           size = 0.7) +
+  geom_point(data = mean_cluster_df,
+             aes(x = agree_mean, y = eng_mean,
+          color = cluster_no), 
+           size = 6, shape = "triangle", show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mapping Clusters",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7))) 
+
+```
+
+
+
+
 ```{r}
 
 x63_clusters <- agree_engage_cl %>% 
@@ -1906,7 +1936,7 @@ ggplot(data = x64_counts,
 
 ##### Visualizing Variables outside of compliance, against clusters: 
 
-
+*Starting with Enforcement* 
 ```{r}
 
 
@@ -1917,7 +1947,8 @@ filter(x49_enforcement_responsible %in% c("Fisheries Management Body",
                                          "Subnational Government",
                                          "No enforcement system",
                                          "Myself",
-                                         "Other", na.rm = FALSE))
+                                         "Other",
+                                         "National Government", na.rm = FALSE))
 
 ### To make a grouped bar chart, I want counts for each cluster
 
@@ -1928,7 +1959,9 @@ enforcement_counts <- enforcement_df %>%
   count(cluster_no)
 
   
-  
+swtiched_enforcement_counts <- enforcement_df %>% 
+  group_by(cluster_no) %>% 
+  count(x49_enforcement_responsible)
   
   
 #  recode_factor(`44_meeting_attendance`, "" = "Fisheries Management Body"))
@@ -1942,15 +1975,14 @@ enforcement_counts <- enforcement_df %>%
 
 
 
-ggplot(enforcement_counts,
-       aes(x = x49_enforcement_responsible, y = n, fill = cluster_no)) +
+ggplot(swtiched_enforcement_counts,
+       aes(x = cluster_no, y = n, fill = x49_enforcement_responsible)) +
   geom_bar(position="fill", stat="identity") +
-  labs( x = "Enforncement Responsibility",
-      y = "Cluster",
+  labs( x = "Cluster #",
+      y = "Enforcement",
       title = "Enforcement By Cluster", 
-      color = "Cluster") +
-    guides(colour = guide_legend(override.aes = list(size=7))) +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
+      Fill = "Enforcement Type") +
+    guides(colour = guide_legend(override.aes = list(size=7))) 
 
 
   # scale_x_continuous(limits = c(-3, 2),
@@ -1959,7 +1991,29 @@ ggplot(enforcement_counts,
   #                    breaks = c( -1, 0, 1, 2)) +
 
 
+
+ggplot(enforcement_counts,
+       aes(x = x49_enforcement_responsible, y = n, fill = cluster_no)) +
+  geom_bar(position="fill", stat="identity") +
+  labs( x = "Enforcement Responsibility",
+      y = "Cluster",
+      title = "Enforcement By Cluster", 
+      color = "Cluster") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+
+
 ```
+
+"Who is responsible for enforcement in
+your community?
+1. Fisheries Management Body
+2. National Government
+3. Subnational Government
+4. Other (please state)
+5. There is no enforcement system"
+
 What do we see??
 
 Dyl hypothesis: National government would show us less engaged fishers
@@ -1973,6 +2027,74 @@ Dyl hypothesis: National government would show us less engaged fishers
 
 
 
+Let's get some count data (classic post-visualization move)
+
+```{r}
+
+
+enforcement_wider <- enforcement_counts %>% 
+  pivot_wider(names_from = x49_enforcement_responsible, 
+              values_from = n) %>% 
+ bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
+
+
+enforcement_kable_1 <- head(enforcement_wider) %>% 
+  kable( format = "html", caption = "Enforcement") %>% 
+  kable_styling(bootstrap_options = "striped", 
+                full_width = F,
+                position = "left") %>% 
+collapse_rows(columns = 3, valign = "middle")
+
+
+
+enforcement_kable_1
+
+  
+
+```
+
+
+Comparing "Subnational government" and "No enforcement system"
+
+
+```{r}
+three_filter_enforcement <- enforcement_df %>% 
+  filter(x49_enforcement_responsible %in% c("Subnational Government",
+                                            "National Government",
+                                            "No enforcement system"))
+
+ggplot(three_filter_enforcement,
+       aes(x = agree_mean, y = eng_mean, color = x49_enforcement_responsible)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Enforcement and Complaince (National, Subnational, and No Enforcement", 
+      color = "Enforcement Type") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  scale_color_manual(values = c("gold", "darkgreen", "blue"))
+
+
+no_enforcement <- enforcement_df %>% 
+  filter(x49_enforcement_responsible == "No enforcement system")
+
+st(no_enforcement)
+
+
+```
+
+No enforcement system lacks engaged folks, perhaps because they cannot volunteer for enforcement 
+There is more high agreement among fishers who believe that their National Government is responsible for fishery enforcement
+The very-unengaged (below -1) have an even spread across the 3 types. 
+Among the No enforcement: 
+Variable	N	    Mean	Std. Dev.	Min	  Pctl. 25	Pctl. 75	Max
+eng_mean	188	-0.485	0.5	     -1.559	-0.829	 -0.207	  1.586
+agree_mean188	-0.498	0.73	-   2.207	-0.983	 0.101	  0.98
+47% in C5, and 35% in C4.
+75% from Brazil, 22% Honduras. There are a few outliars who engage heavily, and at least 1 who completely agrees. However, these folks are mostly resistant. 1 SD above the mean in right around (0,0) 
 
 
 ```{r}
@@ -2001,7 +2123,7 @@ Hypothesis: Fishers without boats are less likely to engage
 
 ```{r}
 boat_ownership <- agree_engage_cl %>% 
-  select(eng_mean, agree_mean, x21_boat_owner_status, cluster_no, x23_job_secure, country)
+  select(eng_mean, agree_mean, x21_boat_owner_status, cluster_no, x23_job_secure, country, x49_enforcement_responsible, x11d_income_fishing_industrial, x11c_income_fishing_artisanal)
 
 boat_counts <- boat_ownership %>% 
   group_by(cluster_no) %>% 
@@ -2052,7 +2174,25 @@ ggplot(boats_by_country,
 A lot of renting on Honduras! 
 Mozambique and Brazil have a lot of collective ownership 
 Brazil also has a lot of boat owners 
-Mozambique has the highest percentage of fishers who fish without boats, even more than Brazil (where I know many fishers collect crabs and other invertibrates)
+Mozambique has the highest percentage of fishers who fish without boats, even more than Brazil (where I know many fishers collect crabs and other invertebrates)
+
+
+*Hypothesis: Boat employees fish industrially*
+
+```{r}
+
+boats_industrial <- boat_ownership %>% 
+  filter(x21_boat_owner_status == "Employee") %>% 
+  count(x11d_income_fishing_industrial)
+
+
+```
+
+OK, too hard to know. 231 NA, 15 not NA. No correlation
+
+
+
+
 
 
 *Visualizing Need + Food Security* 
@@ -2230,7 +2370,7 @@ Those who often worry about food have a lot of somewhat engaged, rather agreeing
 ```{r}
 
 first_correlate_df <- agree_engage_cl %>% 
-  select(cluster_no, agree_mean, eng_mean, x55_worry_food, x11b_income_harvesting, x11c_income_fishing_artisanal, x11d_income_fishing_industrial, x11e_income_buying_trading, x11f_income_processing, x11g_income_aquaculture, x11h_income_extraction, x11i_income_tourism, x38_reserve_fishing_allowed, x39_ma_boundaries_aware, x50_ma_punishment, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61h_individual_behavior, x61i_help_neighbors, x62_reserve_compliance, x63_fishing_in_reserve, x64_wrong_fishing_reserve, x50_ma_punishment, x55_worry_food, x59_food_procurement) %>% 
+  select(agree_mean, eng_mean, x55_worry_food, x11b_income_harvesting, x11c_income_fishing_artisanal, x11d_income_fishing_industrial, x11e_income_buying_trading, x11f_income_processing, x11g_income_aquaculture, x11h_income_extraction, x11i_income_tourism, x38_reserve_fishing_allowed, x39_ma_boundaries_aware, x50_ma_punishment, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61h_individual_behavior, x61i_help_neighbors, x62_reserve_compliance, x63_fishing_in_reserve, x64_wrong_fishing_reserve, x50_ma_punishment, x55_worry_food, x59_food_procurement) %>% 
  
    mutate(x39_ma_boundaries_aware = recode_factor(x39_ma_boundaries_aware, 
       "Strongly agree" = 5,
@@ -2264,7 +2404,6 @@ first_correlate_df <- agree_engage_cl %>%
   mutate(x50_ma_punishment = as.numeric(x50_ma_punishment)) %>% 
   mutate(x55_worry_food = as.numeric(x55_worry_food)) %>% 
   mutate(x59_food_procurement = as.numeric(x59_food_procurement)) %>% 
-  mutate(cluster_no = as.numeric(cluster_no)) %>% 
   mutate(x64_wrong_fishing_reserve = as.numeric(x64_wrong_fishing_reserve)) %>% 
   mutate(x62_reserve_compliance = as.numeric(x62_reserve_compliance))
 
@@ -2279,27 +2418,58 @@ first_correlate_df <- agree_engage_cl %>%
 
 
 
-corr_1 <-  corrplot(cor(first_correlate_df, use="pairwise.complete.obs"), main = "Lots of variables")
+corrplot(cor(first_correlate_df, use="pairwise.complete.obs", method = "spearman"))
 
+corrplot(cor(first_correlate_df, use="pairwise.complete.obs"), type = "lower", method = "color", col=brewer.pal(n=8, name="PuOr"))
 
+   #    method="number", 
+                   # order="hclust", 
+                   # addrect=2, 
+                   # diag=F,
 ```
 
+Correlation with Engagement/Agreement:(N = Negative, P = Positive, options of strength = c(week, moderate, strong)) [E/A]
+- x11e (P, weak) [E]
+
+
+- x61c (P, weak) [E]
+- x61d (P, weak) [E]
+- x61h (N, weak) [E]
+Weak, negative correlation with Engagement: x55, x11b, x11d, x11f, x11h, x11i, x39, x50, x61h, x63, x64
+Agreement:
+- x61c (P, weak) [A]
+- x61d (P, weak) [A]
+- x61h (P, weak) [A]
+- x61i (P, weak) [A]
+- x64 (N, moderate) [A]
+- x11h (N, moderate) [A]
+x39 (N, moderate) [A]
+Weak negative correlation with agreement: 
+11b, 11c, 11d, 11f, 11g, x62, x63
+
+Other interesting correlations
+- x64 (wrong to fish in the reserve) and x11h (income from extraction) (P, moderate)
+- x61d (strong enforcement) and x11h (income form extraction) (N, moderate)
+- Strong negative correlation between 11i and 11h (tourism and extraction incomes)
+- x64 has negative correlations with x61c and x61c (community participation and strong enforcement)
+- x61c through x61 i have moderate positive correlations
+
+
+
 Making a table of all these variables, by cluster 
-
-
 ```{r}
-longer_corr_df <- first_correlate_df %>% 
-group_by(cluster_no) %>% 
-  summarise_at(vars(1:23), funs(mean(., na.rm=TRUE))) 
-
- cluster_iv_kable <- head(longer_corr_df) %>% 
- kable( format = "html", caption = "Summary of Clusters") %>% 
-   kable_styling(bootstrap_options = "striped", 
-                full_width = F,
-                position = "left") %>% 
-collapse_rows(columns = 3, valign = "middle") 
-
-cluster_iv_kable
+# longer_corr_df <- first_correlate_df %>% 
+# group_by(cluster_no) %>% 
+#   summarise_at(vars(1:23), funs(mean(., na.rm=TRUE))) 
+# 
+#  cluster_iv_kable <- head(longer_corr_df) %>% 
+#  kable( format = "html", caption = "Summary of Clusters") %>% 
+#    kable_styling(bootstrap_options = "striped", 
+#                 full_width = F,
+#                 position = "left") %>% 
+# collapse_rows(columns = 3, valign = "middle") 
+# 
+# cluster_iv_kable
  
 ```
 
