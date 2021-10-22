@@ -59,7 +59,7 @@ maa_reserves_list <- left_join(summary, reserves_list, by = "ma_name_new") %>%
   select(-region, -country.y)
 
 # Export new .csv
-write.csv(maa_reserves_list, file = "maa_reserves_list.csv")
+#write.csv(maa_reserves_list, file = "maa_reserves_list.csv")
 
 ```
 
