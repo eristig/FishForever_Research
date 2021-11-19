@@ -1,0 +1,401 @@
+---
+title: "Extra Visualizations and Analyses"
+author: "Dylan Glave"
+date: "11/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(janitor)
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(knitr)
+library(naniar)
+library(here)
+library(dplyr)
+library(scales)
+library(stringr)
+library(plotly)
+library(foreign)
+library(nnet)
+library(reshape2)
+library(vtable)
+library(stargazer)
+library(viridis)
+library(NbClust)
+library(car)
+library(corrplot)
+library(RColorBrewer)
+library(forcats)
+library(viridis)
+
+```
+
+## R Markdown
+
+OK, so! 
+
+
+In our `full_analysis.Rmd` there is a TON of semi-related work. Some of that work (although great) is superfluous to the Cluster Analysis focus. In order to keep things organized, I'll be moving chunks of that Rmd to.....you guessed it, this one! 
+
+Starting with the Bar Plots for each Engagement and Agreement question. 
+**The relevant data is stored in `scaled_sum.csv`**
+
+###### Reading in the data mentioned above
+
+```{r, include=FALSE}
+scaled_sum <- read_csv("scaled_sum.csv")
+```
+
+###### Bar Graphs for each A & E Question
+
+**Engagement** 
+
+
+1. Question 44
+
+```{r}
+
+x44_counts <- scaled_sum %>% 
+ count(x44_meeting_attendance)
+
+ggplot(data = x44_counts,
+       aes(x = x44_meeting_attendance, y = n)) +
+ geom_bar( stat="identity", fill="goldenrod") +
+  theme_bw()
+```
+*Question 44:  Mean = 0.138, but nearly all respondents said Yes or No. Around 1200 responses did not attend meetings, will around 1600 do attend.*
+
+**Question 45**
+
+```{r}
+x45_counts <- scaled_sum %>% 
+ count(x45_leadership_position)
+
+ggplot(data = x45_counts,
+       aes(x = x45_leadership_position, y = n)) +
+ geom_bar( stat="identity", fill="red3") +
+  theme_bw()
+```
+*Question 45: Mean = -0.551. This mean shows that 3/4 of fishers responded "No" Few fisher households included someone with a leadership position within the fishery.*
+
+
+**Question 48**
+
+```{r}
+
+x48_counts <- scaled_sum %>% 
+ count(x48_enforcement_participation)
+
+ggplot(data = x48_counts,
+       aes(x = x48_enforcement_participation, y = n)) +
+ geom_bar( stat="identity", fill="chartreuse1") +
+  theme_bw()
+```
+*Question 48: Mean = -0.492. Nearly 3 out of 4 fishers do not participate in enforcement.*
+
+
+A quick pause from graphs! 
+
+Let's see the combination counts for question 45 and 48
+
+```{r}
+counts_45_48 <- scaled_sum %>% 
+  count(x45_leadership_position, x48_enforcement_participation)
+```
+- Leaders who don't enforce: 192
+- Enforcement volunteers without leadership roles: 250
+- Households who do both: 283
+-Households who no neither: 1770
+
+
+```{r}
+x53_counts <- scaled_sum %>% 
+ count(x53_encourage_regulations)
+
+ggplot(data = x53_counts,
+       aes(x = x53_encourage_regulations, y = n)) +
+ geom_bar( stat="identity", fill="lightblue") +
+  theme_bw()
+```
+*Question 53: Mean = -0.071. This is just below the "neutral" survey option. We see a very similar totals in the "strongly agree" and "strongly disagree." Our mean skews negative because around 100 more fishers wrote "disagree" relative to "agree."*    
+
+
+
+
+```{r}
+x61g_counts <- scaled_sum %>% 
+ count(x61g_fishing_change_behavior)
+
+ggplot(data = x61g_counts,
+       aes(x = x61g_fishing_change_behavior, y = n)) +
+ geom_bar( stat="identity", fill="seagreen2") +
+  theme_bw()
+```
+*Question 61(g) mean = 3.955. This is the first mean that really skews high. With a mode of 4, most respondents were at least "willing" to change their fishing behavior for the reserve structure.*
+
+Here's a check for normal distrbution: 
+It looks pretty normal, even with the high amount of "4" responses
+```{r}
+qqnorm(scaled_sum$x61g_fishing_change_behavior, pch = 1, frame = FALSE)
+qqline(scaled_sum$x61g_fishing_change_behavior, col = "steelblue", lwd = 2)
+
+```
+
+
+
+*Moving onto Agreement* 
+
+```{r}
+
+
+x43_counts <- scaled_sum %>% 
+ count(x43_ma_benefits)
+
+ggplot(data = x43_counts,
+       aes(x = x43_ma_benefits, y = n)) +
+ geom_bar( stat="identity", fill="slateblue2") +
+  theme_bw()
+```
+*43:  Mean  = 0.556. Nearly no one answered with the negative response.*
+
+
+
+
+
+```{r}
+x46_counts <- scaled_sum %>% 
+ count(x46_represent_interests)
+
+ggplot(data = x46_counts,
+       aes(x = x46_represent_interests, y = n)) +
+ geom_bar( stat="identity", fill="mediumorchid2") +
+  theme_bw()
+```
+ *Question 46: Mean = 0.667. Huge skew towards the positive response. 
+ 
+
+
+
+
+We saw that variables 46 and 47 are highly correlated, and have similar wording. We find them to NOT be independent from one another, and exclude 47 from the index of Agreement.
+
+
+```{r}
+x52_counts <- scaled_sum %>% 
+ count(x52_ma_benefit_5yrs)
+
+ggplot(data = x52_counts,
+       aes(x = x52_ma_benefit_5yrs  , y = n)) +
+ geom_bar( stat="identity", fill="olivedrab3") +
+  theme_bw()
+
+
+```
+*Question 52: Mean = 0.506. For the first time, we see a lot of "unsure" answers. This likely has to do with uncertainty in projecting 5 years in the future. 
+
+```{r}
+x61a_counts <- scaled_sum %>% 
+ count(x61a_current_regulations)
+
+ggplot(data = x61a_counts,
+       aes(x = x61a_current_regulations, y = n)) +
+ geom_bar( stat="identity", fill="springgreen3") +
+  theme_bw()
+```
+*Question 61(a): Mean = 3.93, clear positive skew, and the mean seems to represent the mode and median*
+
+
+
+
+```{r}
+x61f_counts <- scaled_sum %>% 
+ count(x61f_rights_distribution_fair)
+
+ggplot(data = x61f_counts,
+       aes(x =x61f_rights_distribution_fair, y = n)) +
+ geom_bar( stat="identity", fill="skyblue") +
+  theme_bw()
+```
+*61(f): Mean = 3.805. More neutral responses that strongly agree, but very few disagreeing fishers.* 
+
+
+
+```{r}
+x62_counts <- scaled_sum %>% 
+ count(x62_reserve_compliance)
+
+ggplot(data = x62_counts,
+       aes(x =x62_reserve_compliance, y = n)) +
+ geom_bar( stat="identity", fill="indianred4") +
+  theme_bw()
+```
+Question 62: Mean = 0.525
+
+We do NOT include this question in the index, but will use it to create a graph of "admitting noncompliance" 
+
+
+
+```{r}
+x64_counts <- scaled_sum %>% 
+ count(x64_wrong_fishing_reserve)
+
+ggplot(data = x64_counts,
+       aes(x =x64_wrong_fishing_reserve, y = n)) +
+ geom_bar( stat="identity", fill="chocolate4") +
+  theme_bw()
+```
+*Question 64: Mean = 3.957. Another mean between 3 and 4, with very small numbers of below-neutral responses*
+
+
+
+
+###### Engagement-Only Clustering
+*This is not part of our continuing analysis*
+```{r}
+
+ cluster_number_est <- NbClust(scaled_sum[24:28], min.nc = 2, max.nc = 8, method = "kmeans")
+
+
+```
+
+
+So R has suggested that there are *3* meaningful clusters for engagement. 
+
+
+For now, I run the clusters, and we can go back. 
+
+
+Looking at 3 clusters:
+
+```{r}
+
+### First I'll just select the engagement variables
+
+ engagement_only <- scaled_sum %>%
+  select(24:28)
+
+ engagement_km <- kmeans(engagement_only, 3) ## The 4 means the amount of clusters we're looking at
+
+
+ engagement_km
+
+ engagement_cl <- scaled_sum, factor(engagement_km$cluster_no)
+ 
+```
+
+OK! That's a whole lot of information. 
+
+
+I'll look at a couple key factors
+
+- size
+- cluster (which cluster each observation is in)
+
+
+
+Now that these clusters are attached to each observation, let's visualize it 
+
+```{r, include = FALSE}
+
+ggplot(engagement_cl) +
+geom_point(aes(x = agree_mean, y = eng_mean, color = cluster_no),
+           size = 0.7) +
+labs( x = "Agreement (Scaled across 5 Questions)",
+    y = "Engagement (Scaled across 5 Questions)",
+    title = "Mapping Clusters of Engagement",
+    color = "Cluster") +
+scale_x_continuous(limits = c(-3, 2),
+                   breaks = c(-2, -1, 0, 1, 2)) +
+ scale_y_continuous(limits = c(-1.5, 2),
+                   breaks = c( -1, 0, 1, 2))
+
+```
+This is great, let's map them over country and reserve as well. 
+
+
+
+##### UNSCALED K-Means Clustering (Was in use, up until 11/17/21)
+```{r}
+
+unscaled_agree_engage_only <- scaled_sum %>% 
+  select(24:33)
+
+# NbClust(unscaled_agree_engage_only[1:10], min.nc = 2, max.nc = 8, method = "kmeans")
+
+
+set.seed(1)
+
+ agreement_engagement_km <- kmeans(unscaled_agree_engage_only, 5)
+
+## The 5 means the amount of clusters we're looking at
+
+
+  agreement_engagement_km
+
+  
+
+ unscaled_table_df <- data.frame(agreement_engagement_km$size, agreement_engagement_km$centers)
+
+ 
+
+
+  km_table_means <- unscaled_table_df %>% 
+    select(!agreement_engagement_km.size)
+
+kmeans_kable <- head(km_table_means) %>% 
+kable( format = "html", caption = "Summary of Clusters") %>%
+   kable_styling(bootstrap_options = "striped",
+                full_width = F,
+                position = "left") %>%
+collapse_rows(columns = 3, valign = "middle")
+
+
+kmeans_kable
+
+```
+
+
+```{r}
+```{r}
+unscaled_cluster_df <- data.frame(scaled_sum, cluster_no = factor(agreement_engagement_km$cluster))
+
+
+#### Below is a summary df that shows all the means
+
+mean_cluster_df <- unscaled_cluster_df %>%
+        group_by(cluster_no) %>%
+        summarise(eng_mean = mean(eng_mean),
+                  agree_mean  = mean(agree_mean))
+
+cluster_counts <- unscaled_cluster_df %>%
+  count(cluster_no)
+
+
+
+ggplot() +
+  geom_point(data = unscaled_cluster_df,
+       aes(x = agree_mean, y = eng_mean,
+           color = cluster_no),
+           size = 0.7, alpha = 0.7) +
+  geom_point(data = mean_cluster_df,
+             aes(x = agree_mean, y = eng_mean,
+          color = cluster_no),
+           size = 6, shape = "triangle", show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mapping Clusters",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+
+```
+```
+
