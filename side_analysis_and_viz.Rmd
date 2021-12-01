@@ -361,7 +361,7 @@ kmeans_kable
 
 
 ```{r}
-```{r}
+
 unscaled_cluster_df <- data.frame(scaled_sum, cluster_no = factor(agreement_engagement_km$cluster))
 
 
@@ -397,5 +397,111 @@ ggplot() +
    guides(colour = guide_legend(override.aes = list(size=7)))
 
 ```
+
+
+Agreement Clustering
+```{r}
+agreement_km <- kmeans(agree_scaled_sum, 3)
+
+ agreement_km
+
+# 9 of 23 algorithms saw 3 clusters, we're going to run with that
+
+# K-means clustering with 3 clusters of sizes 873, 1444, 797
+
+# Binding the cluster numbers to the observation
 ```
+
+```{r}
+ agree_cl <- data.frame(scaled_sum, cluster_no = factor(agreement_km$cluster))
+```
+
+Linear Regression that is on hold:
+```{r, include=FALSE}
+# 
+#   eng_regression_1 <- lm(data = scaled_sum,
+#                             eng_mean ~ x50_ma_punishment + 
+#                               x40_reserve_boundaries_aware)
+# summary(eng_regression_1)
+# 
+# 
+# ### Let's do one with 3 ecological outcomes: 19, 22, 23
+# 
+# eng_regression_2 <-  lm(data = scaled_sum,
+#                             eng_mean ~ x19_current_fish_catch + x22_catch_5yrs + x23_job_secure)
+# 
+# summary(eng_regression_2)
+# 
+# ## Here out outcome is a Z-score. with ordinal inputs, should we switch to 1-5? 
+```
+
+
+
+```{r}
+# eng_regression_3 <-  lm(data = scaled_sum,
+#                             eng_mean ~ x38_reserve_fishing_allowed + x39_ma_boundaries_aware + x40_reserve_boundaries_aware)
+# 
+# summary(eng_regression_3)
+```
+
+I'll come back to the regression. 
+
+#### The Notes below are from the non `scale()` clusters. We're no longer using them, but I'll keep the notes down here as an appendix. 
+
+There are 5 clusters! 
+
+Sizes: 701  842  936 1350  620
+
+##### Comparing clusters 
+1 and 2 seem similar, with high levels of A and E
+- 44: 0.44 (C1) and 0.86 (C2) Cluster 2 attends more meetings
+- 45 is a big swing, cluster 2 is 0.87, and C1 is -0.85. These are the leaders!
+- 48: -0.44 and 0.35 is a decent difference in enforcement
+BUT C1 is more likely to encourage regulations (1.21 v 0.5)
+-61 is closer (4.5 and 4.1)
+
+Within agreement they're more similar. but C1 is higher average in each of the 5 questions. Less leaders, but agree more across the board. 
+
+
+*3 and 4* 
+- 44: C3 has a 0.97, and C4 has a -0.97
+45 is similar (within .01)
+Same for 48
+53 (encourage regulations) is -0.7 (C3) and -0.29 (C4)
+61g change behavior C3 is the 2nd lowest at 3.7, and c4 is in third at 4.05
+Within agreement, they're averages are similar across all questions, with C3 a little bit lower for most, except ma_benefits 
+
+More than anything, C3 ATTENDS a whole lot more than C4. 
+but C3 is the least likely of any group to encourage regulations. Perhaps we're seeing creative fishers here
+
+
+C5 is looking at 2/5 for questions 61a and 61f, and is also by far the lowest for 46 and 52. within agreement, only in MA benefits are they somewhat close to other clusters. They do have a few more leaders than other clusters though. But overall, very much not attending
+
+*Cluster 1* 
+ Only 1 observation is below -1 in agreement. Most of the *fully-agreeing* fishers are in cluster two - but not all! It excludes the agreeing, but rather unengaged fishers. Similarly, it omits the super-engaged. We can describe C1 (so far) as fishers who are very on board with rules, but are a bit above average engagement. 
+Centers = (0.448207772, 0.3930240) (Agreement, Engagement)
+N = 701
+
+
+*Cluster 2* 
+These are all the *super-engaged* fishers. Agreement ranges from 1 (the maximum) to -1.4. 
+Center = (0.156193496, 0.8606600) (Agreement, Engagement) 
+N = 842
+
+*Cluster 3*
+This is the largest spread of any cluster. We have some fully-agreeing fishers, and at least 1 or 2 with agreement below 1.5. Engagement grows up to 1.5, which is mostly reserved for the high-engaging clusters. With means SO close to 0, we see this as a the most average cluster. A bit less engaged, and agreeing with as much as the average fisher from the study. 
+Center = (0.002805289, -0.1748106) (Agreement, Engagement)
+N = 936
+
+*Cluster 4* 
+Its center is very close to Cluster 3, but we can see clear differences when we look at the spread. These folks do NOT engage. While there as unengaged as the Resistant fishers, but most actually agree quite a lot. This includes some with A = 1, the max. 
+Center = (0.052635489, -0.4098127) (Agreement, Engagement)
+N = 1350, largest cluster
+
+
+
+*Cluster 5 - Resistant*
+This is the classically known group of unengaged, disagreeing fishers. Many of the outliers are from Honduras, but the country variable doesn't explain the entire cluster. They all disagree, but to varying levels. We'll look at their distinguishing characteristics. 
+Center = (-0.837729407, -0.4569608) (Agreement, Engagement)
+N = 620, smallest cluster. 
 

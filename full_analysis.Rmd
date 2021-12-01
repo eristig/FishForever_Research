@@ -36,6 +36,7 @@ library(corrplot)
 library(RColorBrewer)
 library(forcats)
 library(viridis)
+library(plyr)
 ```
 
 ## R Markdown
@@ -696,9 +697,13 @@ scaled_sum <- hhs_scaled %>%
   mutate(agree_sum = sum (x43_scaled + x46_scaled + x52_scaled + x61a_scaled + x61f_scaled))  %>% 
   mutate(eng_mean = mean(c(x44_scaled, x45_scaled, x48_scaled,  x53_scaled,  x61g_scaled))) %>% 
   mutate(agree_mean = mean(c(x43_scaled, x46_scaled, x52_scaled,  x61a_scaled,  x61f_scaled))) %>% 
-  mutate(raw_agree_mean = mean(c(
-    x43_ma_benefits + x46_represent_interests + x52_ma_benefit_5yrs + x61a_current_regulations + x61f_rights_distribution_fair))) %>% 
-    mutate(raw_eng_mean = mean(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior)))
+  rowwise() %>%
+  mutate(raw_agree_mean = mean(c(x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair))) %>% 
+   mutate(raw_eng_mean = mean(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior)))
+
+
+
+
 
     ## Below I add two more variables:  "raw_eng_sum" and "raw_agree_sum." Without scaling, I've summed agreement and engagement across rows, for exploratory visualization
  # mutate(raw_eng_sum = sum(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior))) %>% 
@@ -727,6 +732,46 @@ filter(country == "NEUTRAL")
   
 ```
 
+
+**Per Steve and Chris' feedback, I am going to manually relevel the indicies to a subtantive (non-relative) scale, as shown below**
+
+- Questions with *-1, 0, 1* will remain the same
+- Questions on a *1-5* or *-2-2* scale will transform into a *-1, -0.5, 0, 0.5, 1* scale, and from there we will take the means. 
+
+
+```{r}
+raw_index_leveling <- scaled_sum %>% 
+  select(country, x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair,x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior) %>% 
+  mutate(x61a_current_regulations =  recode(x61a_current_regulations ,
+                                             "1" = "-1",
+                                                  "2" = "-0.5",
+                                                  "3" = "0", 
+                                                  "4" = "0.5",
+                                                  "5" = "1")) %>% 
+  
+  
+  
+  
+```
+
+
+
+```{r}
+
+# **NOTE: `scaling_raw_means` is a bit funky. It's temporary, and uses a Base R line. It uses scale() for all rows but country. The following df, `raw_means_df` will be what I use to map the second version of the index.`**
+# 
+# This tricky step happens because we don't want a step from "4" to "5" in likert to be the same as a step from "Neutral" to "Yes" on a binary question. 
+
+
+
+
+
+
+raw_means_df <- scaling_raw_means %>% 
+ mutate(raw_agree_mean = mean(c(x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair))) %>% 
+  mutate(raw_eng_mean = mean(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior)))
+  
+```
 
 
 
@@ -778,9 +823,7 @@ With that, we'll make a preliminary graph:
   guides(colour = guide_legend(override.aes = list(size=7))) +
   theme_bw()
 
-  
-phil_scaled_graphable <- scaled_sum %>% 
-  filter(country == "PHL")
+
 
 
 ggplot(data = scaled_sum,
@@ -826,16 +869,14 @@ ggplot(data = scaled_sum,
 
 
  ggplot(data = scaled_sum,
-       aes(x = eng_sum, y = agree_sum, color = country)) +
+       aes(x = agree_sum, y = eng_sum, color = country)) +
  geom_point(size = 0.7, alpha = 0.7) +
   theme_bw()
 
 
-
-
 ```
 Here is: 
-- A plot with the **neutral** fisher reported within the of our Z-score-based indices. We see that Ms. Neutral is 1 SD below the mean in agreement. This location means that the vast majority of fishers at least somewhat agree with rules in place. I hypothesize that (with Rare's perspective) that changing *egagement* of fishers in the opportunity; improving agreement is important, but we see more measurable room for change on the engagement axis. 
+- A plot with the **neutral** fisher reported within the of our Z-score-based indices. We see that Ms. Neutral is 1 SD below the mean in agreement. This location means that the vast majority of fishers at least somewhat agree with rules in place. I hypothesize that (with Rare's perspective) that changing *engagement* of fishers in the opportunity; improving agreement is important, but we see more measurable room for change on the engagement axis. 
 
 
 - A graph of Agreement and Engagement measures, colored by responses of "Do you fish inside the reserve?" 
@@ -848,10 +889,14 @@ Question 63 asks if fishers break the rules, and fish in the reserve. This would
 First, I'll use `raw_eng_mean` and `raw_agree_mean` to see the spread of fisher attitudes
 
 ```{r}
- ggplot(data = scaled_sum,
+
+raw_neutral_point <- raw_means_df %>% 
+  filter(country == "NEUTRAL")
+
+ ggplot(data = raw_means_df,
                       aes(x = raw_agree_mean, y = raw_eng_mean)) +
    geom_point(color = "darkblue", size = 0.7, alpha = 0.7) +
-  geom_point(data = neutral_point, aes(x = raw_agree_mean, y = raw_eng_mean),
+  geom_point(data = raw_neutral_point, aes(x = raw_agree_mean, y = raw_eng_mean),
              size = 8, color = "pink2") +
   labs( x = "Agreement (Scaled across 5 Questions)",
       y = "Engagement (Scaled across 5 Questions)",
@@ -1041,8 +1086,7 @@ agree_engage_only_scaled <- scaled_sum %>%
   select(24:33) %>% 
   scale()
 
-agree_engage_unscaled <- scaled_sum %>% 
-  select(24:33)
+
 
 ```
 
@@ -1672,7 +1716,9 @@ Here we see really similar results to the Engagement corrplot. There are no dark
 Let's look at agreement AND engagement. This will look messy at first. 
 
 ```{r}
-corrplot(cor(agree_engage_unscaled), main = "Agreement + Engagement Question Correlations")
+corr_ae_unscaled <- agree_engage_unscaled %>% 
+  select(2:11)
+corrplot(cor(corr_ae_unscaled), main = "Agreement + Engagement Question Correlations")
 ```
 
 
@@ -2238,18 +2284,16 @@ Let's compare question 19 across the axes and the clusters
 
 no_na_19 <- scaled_km_df %>% 
     drop_na(x19_current_fish_catch) %>% 
-  mutate(x19_current_fish_catch = as_factor(x19_current_fish_catch)) %>% 
-fct_relevel(x19_current_fish_catch, "Improved heavily", after = Inf)
-
+ mutate(x19_current_fish_catch = recode_factor(x19_current_fish_catch, 
+    "Declined a lot" = "1. Declined a lot",
+          "Declined slightly" = "2. Declined slightly",
+           "Stayed the same" = "3. Stayed the same",
+          "Improved slightly" = "4. Improved slightly",
+          "Improved heavily" = "5. Improved heavily")) 
   
- # as.factor(x19_current_fish_catch)
- # 
- # 
- #         "Declined a lot",
- #          "Decloned slightly",
- #           "Stayed the same",
- #          "Improved slightly",
- #          "Improved heavily")
+
+
+       
          
          
 mean_19_df <- no_na_19 %>% 
@@ -2302,7 +2346,7 @@ ggplot(no_na_19,
 Eye-test notes: 
 - Declined a lot has most of the resistant outliars, has less average fishers AND less of the high-agreement, low-engagement folks 
 - Improved Slightly: not too many in full-agreement with rules, but very even across the engagement axis. Also miss thing high-agreement, low-engagement fishers. 
-- *Stayed the same*  has a limited amount of high-engaging fishers, we see a lot of high-agreement. 
+- *Stayed the same*  has a limited amount of high-engaging fishers, we see a lot of high-agreement.
 
 
 For me, I'd like to see some counts 
@@ -2317,7 +2361,8 @@ x19_cluster_counts <- no_na_19 %>%
 
 
 ggplot(x19_cluster_counts,
-       aes(x = x19_current_fish_catch, y = n, fill = cluster_no)) +
+       aes(x = x19_current_fish_catch, y = n, fill = cluster_no,
+           )) +
   geom_bar(position="fill", stat="identity") +
   labs( x = "Perception of Fish Stock (over last 2 years)",
       y = "Percentage",
