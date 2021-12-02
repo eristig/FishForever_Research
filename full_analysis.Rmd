@@ -49,7 +49,7 @@ To start, we'll read in *all* relevant CSVs
 
 ```{r, echo=FALSE}
 # Read in .csv from new Rare data portal
-hhs_all <- read_csv(here("new_portal_data", "hh_surveys_all.csv"))
+hhs_all <- read_csv("hh_surveys_all.csv")
 
 # Read in separate question .csvs from the new Rare data portal
 hhs_q44 <- read_csv(here("new_portal_data", "hh_q44.csv"))
