@@ -10,20 +10,17 @@ output:
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-
+library(plotly)
+library(plyr)
 library(tidyverse)
 library(here)
 library(janitor)
 library(tidyverse)
-library(ggplot2)
 library(kableExtra)
 library(knitr)
 library(naniar)
 library(here)
-library(dplyr)
 library(scales)
-library(stringr)
-library(plotly)
 library(foreign)
 library(nnet)
 library(reshape2)
@@ -36,7 +33,7 @@ library(corrplot)
 library(RColorBrewer)
 library(forcats)
 library(viridis)
-library(plyr)
+
 ```
 
 ## R Markdown
@@ -49,12 +46,13 @@ To start, we'll read in *all* relevant CSVs
 
 ```{r, echo=FALSE}
 # Read in .csv from new Rare data portal
-hhs_all <- read_csv("hh_surveys_all.csv")
+
+hhs_all <- read_csv(here::here("new_portal_data", "hh_surveys_all.csv"))
 
 # Read in separate question .csvs from the new Rare data portal
-hhs_q44 <- read_csv(here("new_portal_data", "hh_q44.csv"))
-hhs_q45 <- read_csv(here("new_portal_data", "hh_q45.csv"))
-hhs_q48 <- read_csv(here("new_portal_data", "hh_q48.csv"))
+hhs_q44 <- read_csv(here::here("new_portal_data","hh_q44.csv"))
+hhs_q45 <- read_csv(here::here("new_portal_data","hh_q45.csv"))
+hhs_q48 <- read_csv(here::here("new_portal_data","hh_q48.csv"))
 
 
 ```
@@ -72,13 +70,13 @@ However, the goal of this analysis is just to see if any single member of a hous
 ```{r}
 # Check dupes for all questions
 dupes_44 <- data.frame(table(hhs_q44$submissionid)) %>% 
-  rename(submissionid = Var1)
+  dplyr::rename(submissionid = Var1)
 
 dupes_45 <- data.frame(table(hhs_q45$submissionid)) %>% 
-  rename(submissionid = Var1)
+  dplyr::rename(submissionid = Var1)
 
 dupes_48 <- data.frame(table(hhs_q48$submissionid)) %>% 
-  rename(submissionid = Var1)
+  dplyr::rename(submissionid = Var1)
 ```
 
 The chunks below use recode_factor() to change cells within Qs 44, 45, and 48 to each have a single answer. 
@@ -738,16 +736,16 @@ filter(country == "NEUTRAL")
 - Questions with *-1, 0, 1* will remain the same
 - Questions on a *1-5* or *-2-2* scale will transform into a *-1, -0.5, 0, 0.5, 1* scale, and from there we will take the means. 
 
-
+The following attempt to create a scaled (without Z-scores, is on hold as of 12/6/21. Contact D Glave to edit/advance)
 ```{r}
-raw_index_leveling <- scaled_sum %>% 
-  select(country, x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair,x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior) %>% 
-  mutate(x61a_current_regulations =  recode(x61a_current_regulations ,
-                                             "1" = "-1",
-                                                  "2" = "-0.5",
-                                                  "3" = "0", 
-                                                  "4" = "0.5",
-                                                  "5" = "1")) %>% 
+# raw_index_leveling <- scaled_sum %>% 
+#   select(country, x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair,x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior) %>% 
+#   mutate(x61a_current_regulations =  recode(x61a_current_regulations ,
+#                                              "1" = "-1",
+#                                                   "2" = "-0.5",
+#                                                   "3" = "0", 
+#                                                   "4" = "0.5",
+#                                                   "5" = "1")) %>% 
   
   
   
