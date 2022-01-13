@@ -35,6 +35,7 @@ library(corrplot)
 library(RColorBrewer)
 library(forcats)
 library(viridis)
+library(data.table)
 
 ```
 
@@ -235,8 +236,10 @@ hhs_q48_dupes <- hhs_q48 %>%
   inner_join(dupes_48, hhs_q48, by = "submissionid") %>% 
   arrange(desc(submissionid))
 
+
 # Drops rows where submissionid's with a frequency greater than 1 are labeled "Not sure"
 hhs_q48_dupes <- hhs_q48_dupes[!(hhs_q48_dupes$Freq > 1 & hhs_q48_dupes$`48_enforcement_participation` == "Not sure"),]
+
 
 # Drops rows that have NA
 hhs_q48_dupes <- hhs_q48_dupes[!(hhs_q48_dupes$`48_enforcement_participation` == "na"),] 
@@ -307,6 +310,42 @@ hhs_q48_dupes <- hhs_q48_dupes %>%
   mutate(`48_enforcement_participation` = recode_factor(`48_enforcement_participation`, "Yes female Yes male No" = "Yes"))
 ```
 
+I'm quite interested in question, which is its own CSV. What does that mean? It means I ahve to do the same duplicate process ass q 44, 45, and 48. 
+
+
+```{r}
+
+
+dupes_7 <- data.frame(table(hhs_q7$submissionid)) %>% 
+  dplyr::rename(submissionid = Var1)
+
+
+
+hhs_q7_dupes <- hhs_q7 %>% 
+  inner_join(dupes_7, hhs_q7, by = "submissionid") %>% 
+  arrange(desc(submissionid))
+
+# hhs_q7_dupes <- hhs_q7_dupes %>%
+#   group_by(submissionid, Freq) %>%
+#   summarise(`7_gender` = paste(`7_gender`, collapse = ' ',
+#                                `7_age` = paste(`7_age`, collapse = ' ')))
+
+
+q7_df <- hhs_q7_dupes %>% 
+  group_by(submissionid) %>%
+   summarise_all(list(~ .[!is.na(.)][1])) %>% 
+  rename(household_size = Freq)
+
+
+# hhs_q7_dupes <- hhs_q7_dupes[!(hhs_q7_dupes$Freq > 1),]
+
+
+```
+
+
+
+
+
 Again, `recode()` has been switched to `recode_factor()` for question 48
 
 After recoding/cleaning, these different df were all combined into `hhs_complete_all` using `right_join`
@@ -317,7 +356,9 @@ hhs_all_48 <- right_join(hhs_q48_dupes, hhs_all, by = "submissionid")
 
 hhs_all_45 <- right_join(hhs_q45_dupes, hhs_all_48, by = "submissionid")
 
-hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_45, by = "submissionid")
+hhs_all_7 <- right_join( hhs_all_45, q7_df, by = "submissionid")
+
+hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_7, by = "submissionid")
 
 write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
 
@@ -467,7 +508,7 @@ x11h_months_extraction, x11i_income_tourism, x11i_months_tourism,   x11j_income_
 x11k_months_other, x11k_other_source, 
 x12a_fishing_men, x12b_fishing_women, x12c_fishing_children, 
 x19_current_fish_catch, 
-x22_catch_5yrs,                   
+x22_catch_5yrs, x17_fishing_low_profit, x18_fishing_high_profit,          
 x23_job_secure, x26_fishing_income_save, x28_buyer_loans, x29_family_income,
 x30_trust_community,x30_trust_community_neighbors, x30_trust_fishers_community,
 x30_trust_fishers_other, 
@@ -489,7 +530,8 @@ x61i_help_neighbors,
 x66_reaction_fishing_reserve, x66_response_fishing_reserve, x62_reserve_compliance, x63_fishing_in_reserve, x64_wrong_fishing_reserve, x21_boat_owner_status,
 x32_fishery_benefit_equal,
 x51b_fishers_reserves,
-x70_hh_average_income
+x70_hh_average_income, 
+x7_gender, x7_age, x7_relationship, x7_gender, x7_education, household_size,
 )) %>% 
  # mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
    drop_na(24:34) %>% 
@@ -1517,23 +1559,17 @@ collapse_rows(columns = 3, valign = "middle")
 
 kmeans_kable
 ```
-C1:  Mean at (0.22, -0.35) We see values close to 0 for both Agreement and Engagement. None of these responses attend meetings, a decent amount are willing to change behavior. Positive values across Agreement. 
-C2: Mean at (0.24, 0.0) Cluster 1 and 2 are very close, but these Cluster 2 are the average fishers who DO attend local meetings. 
-
-In fact, clusters 2 and 5 nearly all attend meetings while some folks in Cluster 3 attend meetings (range of -1.5-1)
-
-
-Cluster 5 are leaders, Cluster 2 have a barely positive value for leadership.
-Enforcement is negative among all clusters EXCEPT 5 (Leader/engaged Cluster)
-Let me get the exact amounts. 
 
 
 Between Cluster 1 and 4 (our "average" fishers,) we see that C4 is a full sd higher on question 43 "Do you think there is any benefit to regulating fishing via a managed access area and a reserve area?"
 
+Both C1 and C4 (average fishers) have higher values in question x61g (willingness to change fishing behavior for the sake of conservation,) and they slightly disagree with "encouraging others to follow regulations."
+
+*Average* fishers aren't engaging much (including meeting attendance.) From an NGO perspective, if one wants to shift fisher behavior+attitudes, then try and bring the reluctant folks into the governance process.  
 
 
 
-Now I have the primary Cluster graph, I'll redo the 5, individual Cluster graphs as points and density plots. (11/18/21)
+Below are updated plots, by cluster (1/6/22)
 ```{r}
 
 x45_clustered <- scaled_km_df %>% 
@@ -1643,10 +1679,13 @@ cluster_1_country_counts <- cluster_1_df %>%
 ```
 *Figure 7a: Cluster 1 centers at (-0.13,-0.23) and accounts for average fishers who don't see benefits from Managed-Access. They respond nuetrally or in disagreement to question 43, and therefore have an agreement ceiling of 1.8*
 
+
 *7b: The density plot shows us that the several hundred observations lie near (0, -0.5) (of 1154 total.) These fishers have are generally disengaged and have average agreement. The exception is their view of MA benefits*
+
 
 Notes: 
 Agreement ranges -1.2 to 0.8 (ceiling) and engagement ranges -1.4 to 0.9, with a soft ceiling at 0.5; only a handful of observations are included above 0.5 on the Y-axis. 
+
 
 *Country Note*
 163 from Brazil seems high.
@@ -1699,10 +1738,24 @@ ggplot(data = cluster_2_df,
 
 *8b: This is a smaller cluster, with a hotspot at (-1, -0.5) and just below (on the Y-axis.) * 
 
+The Neutral fisher is in this cluster, interestingly. 
+
 Country Notes
-- Many of the super-unengaged fishers come from Brazil (there could be less meetings to go to.) 234 total in the cluster
+- Many of the super-unengaged  (bottom of graph)fishers come from Brazil. 
+It's possible that there are less meetings to go to; 234 total in the cluster
 - Many super-disagreeing fishers come from Honduras, 135 total
 - 224 from Philippines, which is only 8% of the 2559 total. 
+
+40% of Honduras and Brazil are in this resistant cluster
+
+- BRA 234 of 573 (41%)
+- HND 135 of 339 (40%)
+- IDN 46 of 146 (32%)
+- FSM 15 of 23 (65%)
+- MOZ 83 of 669 (12%) Nice work MOZ
+- PHL  of 2559 (9%)
+- PLW  of 37 (8%)
+
 
 
 Cluster 3
@@ -1750,7 +1803,7 @@ ggplot(data = cluster_3_df,
                      breaks = c( -1, 0, 1, 2))
 
 ```
-*Figure 10: Cluster 3 is the commitment cluster; they agree with fishery conservation and participate in local mangement. A few of them are below the mean for engagement, and some moderately disagreeing fishers also find themselves here. With a mean of (0.30, 0.87,) these respondents stand out as the attitudes that Rare wants to see (after campaign implementation.) N = 1002, Agreement ranges * 
+*Figure 10: Cluster 3 is the commitment cluster; they agree with fishery conservation and participate in local management. A few of them are below the mean for engagement, and some moderately disagreeing fishers also find themselves here. With a mean of (0.30, 0.87,) these respondents stand out as the attitudes that Rare wants to see (after campaign implementation.) N = 1002* 
 
 Engagement ranges -0.28 (only 1% are below 0) to 1.59.
 Agreement ranges -1 to 1. 1/3 of all observations are below 0
@@ -1759,10 +1812,19 @@ Agreement ranges -1 to 1. 1/3 of all observations are below 0
 Highest density lies at (0,1.) However, we see a vertical density at 0.5 agreement, ranging from 0.5 to 1.25. The grand majority of the cluster lies in this range, with smaller groups at the maximum scores for engagement and agreement. Reminder that to have an engagement "maximum" these people volunteer for enforcement, attend meetings, and have some type of leadership role. 
 
 Country Notes (hypothesis= PHL dominates)
-- 582 from PHL
 - 311 from MOZ (that's a lot for them, 46% of the 669!)
-- 30 from BRA
-- 25 from HND
+PHL is equally proportioned, while Brazil is extremely low, as is Honduras.
+
+
+- BRA 30 of 573 (5%)
+- HND 25 of 339 (7%)
+- IDN 37 of 146 (25%)
+- FSM 2 of 23 (8%)
+- MOZ 311 of 669 (46%)
+- PHL 582 of 2559 (34%)
+- PLW 15 of 37 (41%)
+
+
 
 
 Cluster 4
@@ -1809,22 +1871,22 @@ ggplot(data = cluster_4_df,
                      breaks = c( -1, 0, 1, 2))
 
 ```
-*11a: We see a ton of vertical streaks. only a few fishers are below -1 engagement, while agreeing this much. They agree more(?) that Cluster 1, but otherwise look close to identical. Mean = (0.314, -0.18) N = 1554, largest group.* 
+*11a: Only a few fishers are below -1 engagement, while agreeing this much. They agree more(?) that Cluster 1, but otherwise look close to identical. Mean = (0.314, -0.18) N = 1554, largest group.* 
 
 *11b: There is a sparse line of these unengaged fishers who agree completely with rules. The majority though find themselves between 0 and 1 for agreement (pretty high!) and between -0.5 and 0.5 for engagement. Most of those are below 0. Density is pretty unimodal*
 
 Country Notes
-BRA 246
+- BRA 246 of 573 (37%)
+- HND 156 of 339 (46%)
+- IDN 49 of 146 (33%)
+- MOZ 210 of 669 (31%)
+- PHL 874 of 2559 (34)
+- PLW 19 of 37 (51%)
 
-HND 156
+2/3 are below neutral engagement. 
 
-IDN 49
 
-MOZ 210
 
-PHL 874
-
-PLW 19
 
 
 ##### Country-specific cluster maps 
@@ -1854,6 +1916,10 @@ cl_phil_count <-
 
 ```
 
+Eye Test
+- Very few observations below -1 in agreement. 
+- Clear mix across C1 and C4. 
+- Strong contingency of C3 (committed fishers)
 
 
 Indonesia: 
@@ -1883,6 +1949,11 @@ cl_indo_count <-
 
 ```
 
+Eye-Test
+- Small N, why? 
+- Barely any dots in C1, the average fishers who see no benefit to MA
+
+
 
 Honduras
 ```{r}
@@ -1911,7 +1982,11 @@ cl_hond_count <-
   count(cluster_no)
 ```
 
-Counts: 
+Eye Test
+- Huge spread of resistant fishers
+- Very few from Cluster 1
+- Includes some disagreeing folks who sit well above neutral engagement (creative fishers.)
+- Even the Average fishers here are more engaged than other countries
 
 
 ```{r}
@@ -1937,10 +2012,7 @@ cl_micro_count <-
   count(cluster_no)
 ```
 
-C1: 6 (21%)
-C3: 1  (4%)
-C4: 6 (21%)
-C5: 15 (54%)
+
 
 Mozambique
 
@@ -1967,6 +2039,9 @@ cl_moz_count <-
   count(cluster_no)
 ```
 
+Eye-test
+- Mozambique is the most committed country.
+How'd this come to be? Is MA better than previous management? 
 
 ```{r}
 cl_brazil <- scaled_km_df %>% 
@@ -1995,6 +2070,7 @@ cl_bra_count <-
 ```
 
 
+At first it looks like a full spread, but the majority lie between 0 and -1 engagement, and from there range widely across agreement. 
 
 
 
@@ -2026,23 +2102,9 @@ Here we see really similar results to the Engagement corrplot. There are no dark
 
 Let's look at agreement AND engagement. This will look messy at first. 
 
-```{r}
-corr_ae_unscaled <- agree_engage_unscaled %>% 
-  select(2:11)
-corrplot(cor(corr_ae_unscaled), main = "Agreement + Engagement Question Correlations")
-```
-
-
-
-
-
-Here, we see nothing new, which is interesting! There are no strong correlations across Engagement and Agreement. 
-This suggests that they are genuinely different measurements of compliance. 
-Also of note, there are ZERO negative correlations between an agreement question and an engagement question. I thought that we might see something below zero, but all of these questions track towards compliance. Quite useful stuff. 
-
-
 
 ##### Exploring relations between clusters and other variables (Plus hypotheses)
+
 
 We want to see how other survey variables (other than the 10 compliance varaibles) correlate/interact with our cluster analysis. This includes:
 
@@ -2062,7 +2124,6 @@ filter(x49_enforcement_responsible %in% c("Fisheries Management Body",
                                          "Subnational Government",
                                          "No enforcement system",
                                          "Myself",
-                                         "Other",
                                          "National Government", na.rm = FALSE))
 
 ### To make a grouped bar chart, I want counts for each cluster
@@ -2092,7 +2153,7 @@ swtiched_enforcement_counts <- enforcement_df %>%
 
 ggplot(swtiched_enforcement_counts,
        aes(x = cluster_no, y = n, fill = x49_enforcement_responsible)) +
-  geom_bar(position="fill", stat="identity") +
+  geom_bar(position="dodge", stat="identity") +
   labs( x = "Cluster #",
       y = "Enforcement",
       title = "Enforcement By Cluster", 
@@ -2109,14 +2170,13 @@ ggplot(swtiched_enforcement_counts,
 
 ggplot(enforcement_counts,
        aes(x = x49_enforcement_responsible, y = n, fill = cluster_no)) +
-  geom_bar(position="fill", stat="identity") +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
   labs( x = "Enforcement Responsibility",
       y = "Cluster",
       title = "Enforcement By Cluster", 
       color = "Cluster") +
     guides(colour = guide_legend(override.aes = list(size=7))) +
   theme(axis.text.x = element_text(angle = 45, hjust=1))
-
 
 
 ```
@@ -2136,14 +2196,7 @@ Dyl hypothesis: National government would show us less engaged fishers, while fi
 Curious question: What is the breakdown of those who say "Myself"? What is the N, where are they from, and how do they find themselves in Cluster?
 
 
-What do we see??
 
-- Cluster 1's largest porpotion is within the smaller "Myself" group
-- Cluster 1 is *smaller* for FMP than sub-national and national government (suprised me)
-- "No enforcement" gives us the largest contingent of resistant fishers 
-- Cluster 3 (who attend but do not encourage rules) is tiny within "No Enforcement" 
-- Cluster 3 is large when the subnational government is responsible for enforcing (perhaps they attend, but don't see any impetus on fishers to do anything more)
-- C2 (leaders, very engaged) are are the largest contingent when FMB is responsible for enforcement (this makes sense)
 
 
 
@@ -2186,7 +2239,7 @@ three_filter_enforcement <- enforcement_df %>%
                                             "No enforcement system"))
 
 ggplot(three_filter_enforcement,
-       aes(x = agree_mean, y = eng_mean, color = x49_enforcement_responsible, shape = x49_enforcement_responsible)) +
+       aes(x = agree_mean, y = eng_mean, color = x49_enforcement_responsible)) +
   geom_point(size = 0.7) +
   labs( x = "Agreement (Scaled across 5 Questions)",
       y = "Engagement (Scaled across 5 Questions)",
@@ -2210,13 +2263,11 @@ st(no_enforcement)
 
 No enforcement system lacks engaged folks, perhaps because they cannot volunteer for enforcement 
 There is more high agreement among fishers who believe that their National Government is responsible for fishery enforcement
-The very-unengaged (below -1) have an even spread across the 3 types. 
-Among the No enforcement: 
-Variable	N	    Mean	Std. Dev.	Min	  Pctl. 25	Pctl. 75	Max
-eng_mean	188	-0.485	0.5	     -1.559	-0.829	 -0.207	  1.586
-agree_mean188	-0.498	0.73	-   2.207	-0.983	 0.101	  0.98
-47% in C5, and 35% in C4.
-75% from Brazil, 22% Honduras. There are a few outliars who engage heavily, and at least 1 who completely agrees. However, these folks are mostly resistant. 1 SD above the mean in right around (0,0) 
+The very-unengaged (<1 -1) have an even spread across the 3 types. 
+The very-engaged (>1) all have some sort of enforcement system. 
+
+
+
 
 
 ```{r}
@@ -2299,24 +2350,6 @@ Brazil also has a lot of boat owners
 Mozambique has the highest percentage of fishers who fish without boats, even more than Brazil (where I know many fishers collect crabs and other invertebrates)
 
 
-*Hypothesis: Boat employees fish industrially*
-
-```{r}
-
-boats_industrial <- boat_ownership %>% 
-  filter(x21_boat_owner_status == "Employee") %>% 
-  count(x11d_income_fishing_industrial)
-
-
-```
-
-OK, too hard to know. 231 NA, 15 not NA. No correlation
-
-
-
-
-
-
 ##### Visualizing Need + Food Security  
 
 
@@ -2342,10 +2375,11 @@ food_security <- scaled_km_df %>%
 
 This is going to be a bunch of visuals, and some comparison to see what's actually shown in the data. 
 
-Dyl's hypotheses: 
+
+Dyl's hypotheses:
 - Fishers with limited funds are less engaged, but vary evenly across agreement
 - Fishers who eat lots of seafood are more engaged than those who don't 
-- Cluster 1 (agreers) make more money than Cluster 2 (super-engaged)
+- Cluster 2 (agreers) make more money than Clusters 1 and 4 (average)
 
 
 ```{r}
@@ -2355,8 +2389,7 @@ ggplot(food_security,
   labs( x = "Agreement (Scaled across 5 Questions)",
       y = "Engagement (Scaled across 5 Questions)",
       title = "Food Security Ability", 
-      color = "Cluster", 
-      caption = "Hypothesis: Food Insecure (0) are found in clusters 3 and 4") +
+      color = "Cluster") +
   scale_x_continuous(limits = c(-3, 2),
                      breaks = c(-2, -1, 0, 1, 2)) +
    scale_y_continuous(limits = c(-1.5, 2),
@@ -2369,10 +2402,10 @@ job_security_counts <- food_security %>%
   group_by(cluster_no) %>% 
   count(x23_job_secure) 
 ```
-Cluster 1: 66% job secure
-Cluster 2: 72% job secure
-Cluster 3: 55% job secure
-Cluster 5: 46% job secure
+Cluster 1: 55% job secure
+Cluster 2: 46% job secure
+Cluster 3: 72% job secure
+Cluster 5: 65% job secure
 
 
 
@@ -2395,19 +2428,33 @@ ggplot(food_security,
   guides(colour = guide_legend(override.aes = list(size=7))) +
   facet_wrap(~x29_family_income)
 
+##looking at percentages now, to see another bar plot. 
 
-
+## First, income counts by Cluster
 income_counts <- food_security %>% 
   group_by(cluster_no) %>% 
   count(x29_family_income)
+
+
+ggplot(income_counts,
+       aes(x = cluster_no, y = n, fill = x29_family_income)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Ability to cover family costs", 
+      fill = "Household funds are..", 
+      caption = "Hypothesis: insufficient funds = less engaged") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
+  theme_bw()
+
+
+
+
+
 ```
 Let's look at some count numbers (percentages are numbers!)
 
-C1: 27% Insufficient, 15% sufficient, 57% Tight      671 total
-C2: 25% Insufficient, 21% Sufficient, 54% Tight   780 total
-C3: 26% Insufficient, 10% Sufficient, 63% Tight    887 total
-C4: 11% Insufficient, 17% Sufficient, 70% Tight     1241 total
-C5: 21% Insufficient, 21% Sufficient, 58% tight    584 total
+Ask T about this!
 
 
 Since need (so far) isn't correlating much with any particular level of compliance, let's see how people who are dependent on seafood comply: 
@@ -2437,14 +2484,15 @@ ggplot(seafood_clean,
 seafood_counts <- seafood_clean %>% 
   group_by(cluster_no) %>% 
   count(x60_hh_fish_consumption) %>% 
- pivot_wider(names_from = cluster_no, values_from = n) %>% 
+ pivot_wider(names_from = cluster_no, values_from = n) 
+
   rename('Cluster 1' = '1', 'Cluster 2' = '2', 'Cluster 3' = '3', 'Cluster 4' = '4', 'Cluster 5' = '5')
 
 
 
 ```
 
-Even looking at counts, we're seeing another variable without any correlation - this si kinda crazy! 
+Even looking at counts, we're seeing another variable without any correlation - this is kinda crazy! 
 
 What if - nothing really drives compliance behaviors other than simply attitudes about compliance? 
 
@@ -2473,14 +2521,16 @@ ggplot(food_security,
 
 
 ```
+"Consider the following statement: ”I worry about not having enough food for everyone in the household” Was that often, sometimes or never true for you in the last 12 months?" 
+Alright, now we see some spread.
 
-Alright, now we see some spread. 
+Those who "often" worry about food are MORE engaged and also the most resistant. Comapred to "never."
 
-Those who "often" worry about food are MORE engaged and also the most resistant. 
+People who "never" worry about food security skew towards lower engagement. 
 
 This is challenging because there is a far larger N within "sometimes," but we can compare the differences of "Never" and "Often." Never has some very disagreeing fishers, who engage a little (willing to change behavior, likely) 
 
-Those who often worry about food have a lot of somewhat engaged, rather agreeing folks. Let's do some stats here. He
+Those who often worry about food have a lot of somewhat engaged, rather agreeing folks. Let's do some stats here. 
 
 
 
@@ -2579,21 +2629,7 @@ Other interesting correlations
 
 
 Making a table of all these variables, by cluster 
-```{r}
-# longer_corr_df <- first_correlate_df %>% 
-# group_by(cluster_no) %>% 
-#   summarise_at(vars(1:23), funs(mean(., na.rm=TRUE))) 
-# 
-#  cluster_iv_kable <- head(longer_corr_df) %>% 
-#  kable( format = "html", caption = "Summary of Clusters") %>% 
-#    kable_styling(bootstrap_options = "striped", 
-#                 full_width = F,
-#                 position = "left") %>% 
-# collapse_rows(columns = 3, valign = "middle") 
-# 
-# cluster_iv_kable
- 
-```
+
 
 
 
@@ -2623,20 +2659,16 @@ mean_19_df <- no_na_19 %>%
 
 ggplot(no_na_19,
        aes(x = agree_mean, y = eng_mean, color = x19_current_fish_catch)) +
-  geom_point(size = 1) +
+  geom_point() +
  geom_point(data = mean_19_df,
              aes(x = agree_mean, y = eng_mean), color = "black",
-           size = 6, shape = "triangle", show.legend = FALSE)+
+           size = 5, shape = "triangle", show.legend = FALSE)+
   labs( x = "Agreement (Scaled across 5 Questions)",
       y = "Engagement (Scaled across 5 Questions)",
       title = "Perceived Ecological Change", 
       color = "Change in Fish Stock (perceived)", 
       caption = "Hypothesis: fish decline = Less Agreeing") +
-  scale_x_continuous(limits = c(-3, 2),
-                     breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2)) +
-  guides(colour = guide_legend(override.aes = list(size=7))) +
+  guides(colour = guide_legend(override.aes = list(size=7))) + 
   facet_wrap(~x19_current_fish_catch)
 
 
@@ -2663,9 +2695,7 @@ ggplot(no_na_19,
 
 
 Eye-test notes: 
-- Declined a lot has most of the resistant outliars, has less average fishers AND less of the high-agreement, low-engagement folks 
-- Improved Slightly: not too many in full-agreement with rules, but very even across the engagement axis. Also miss thing high-agreement, low-engagement fishers. 
-- *Stayed the same*  has a limited amount of high-engaging fishers, we see a lot of high-agreement.
+
 
 
 For me, I'd like to see some counts 
@@ -2707,16 +2737,6 @@ ggplot(reversed_x19_counts,
 ```
 Here's a breakdown of the ecology question:
 
-	
-- Declined a lot: 871
-
-- Declined slightly: 1855
-
-- Improved heavily: 27
-
-- Improved slightly: 372
-
-- Stayed the same: 1169
 
 
 
@@ -2877,24 +2897,7 @@ ggplot() +
 
 ```
 
-Table version: 
 
-```{r}
-table_x64_df <- scaled_km_df %>% 
-  group_by(cluster_no) %>% 
-  count(x64_wrong_fishing_reserve)
-
-x64_cluster_kable <- head(table_x64_df) %>% 
-  kable( format = "html", caption = "Morality") %>% 
-  kable_styling(bootstrap_options = "striped", 
-                full_width = F,
-                position = "left") %>% 
-collapse_rows(columns = 3, valign = "middle")
-
-
-x64_cluster_kable
-
-```
 So, kind of everyone thinks its pretty wrong, huh. Also a ton of NAs, hard to limit that noise
 
 
@@ -2905,13 +2908,13 @@ x63_clusters <- scaled_km_df %>%
   filter(x63_fishing_in_reserve == "1")
 
 ggplot(data = x63_clusters, aes(x = agree_mean, y = eng_mean,
-           color = cluster_no, shape = x64_wrong_fishing_reserve),
+           color  = x64_wrong_fishing_reserve),
            size = 0.7, alpha = 0.7) +
-  geom_point(size = 6) +
+  geom_point(size = 1) +
   labs( x = "Agreement (Scaled across 6 Questions)",
       y = "Engagement (Scaled across 5 Questions)",
       title = "Mapping Clusters of Rule-breakers",
-      color = "Cluster") +
+      color = "Morality") +
   scale_x_continuous(limits = c(-3, 2),
                      breaks = c(-2, -1, 0, 1, 2)) +
    scale_y_continuous(limits = c(-1.5, 2),
@@ -2964,6 +2967,118 @@ Male mean =  (0.04032597, 0.02179388)
 This was not the case before! Were all within 0.1 of zero, to be clear. But when we add Brazil, the mean for men increases
 
 
+##### Clusters and Question 4
 
+```{r}
+q_4_clustered <- scaled_km_df %>% 
+  select(x4_ma_r_mb, cluster_no, eng_mean, agree_mean) %>% 
+  drop_na(x4_ma_r_mb) %>% 
+ group_by(cluster_no) %>% 
+  count(x4_ma_r_mb)
+
+ggplot(q_4_clustered) +
+  geom_bar( aes(x = x4_ma_r_mb, y=n, fill = cluster_no), stat="identity", alpha=0.8) +
+  theme_bw() +
+  labs(fill = "MA Status")
+
+```
+Most places have "all 3," when they've answered all of our compliance questions. 
+
+
+##### Basic Demographics and Clusters 
+
+
+##### Fishing Effort
+
+I'll clean up questions 17 and 18, and visualizae them against compliance behaviors
+
+```{r}
+fishing_effort_17 <- scaled_km_df %>% 
+  filter(x17_fishing_low_profit %in% c("Once or never",
+                                         "A few times",
+                                         "A few times per month",
+                                        "1-2 per week",
+                                         "More than 1-2 times per week",
+                                       na.rm = FALSE)) %>% 
+  drop_na(x17_fishing_low_profit)
+
+x17_counts <- fishing_effort_17 %>% 
+  group_by(x17_fishing_low_profit) %>% 
+  count()
+
+x17_cluster_counts <- fishing_effort_17 %>% 
+  group_by(cluster_no) %>% 
+  count(x17_fishing_low_profit)
+```
+
+Let's visualize this, starting with scatterplot
+
+
+```{r}
+ggplot(data = fishing_effort_17,  aes(x = agree_mean, y = eng_mean)) +
+   geom_point(aes(color = x17_fishing_low_profit), size = 0.7, alpha = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+#  scale_color_viridis(discrete = TRUE, option = "D") +
+    # scale_x_continuous(limits = c(-3, 1.7),
+    #                   breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme_bw()
+
+
+ggplot(x17_cluster_counts,
+       aes(x = cluster_no, y = n, fill = x17_fishing_low_profit)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Ability to cover family costs", 
+      fill = "Household funds are..", 
+      caption = "Hypothesis: insufficient funds = less engaged") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
+  theme_bw()
+## Second figure will be another stacked barplot
+
+```
+
+This is rad! I'm going to code away at x18, and then do a little more interpreting. 
+
+
+```{r}
+x18_fishing_effort <- scaled_km_df %>% 
+  filter(x18_fishing_high_profit %in% c(
+    "Once or never",
+"A few times",
+"A few times per month",
+"1-2 per week", 
+"More than 1-2 times per week")) %>% 
+  drop_na(x18_fishing_high_profit)
+
+# basic counts
+
+x18_counts <- x18_fishing_effort %>% 
+  count(x18_fishing_high_profit)
+
+x18_cluster_counts <- x18_fishing_effort %>% 
+  group_by(cluster_no) %>% 
+  count(x18_fishing_high_profit)
+```
+
+Let's do the same visualization for 18, as I did for 17. 
+
+```{r}
+ggplot(x18_cluster_counts,
+       aes(x = cluster_no, y = n, fill = x18_fishing_high_profit)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Fishing in High Season", 
+      fill = "Frequency of Fishing", 
+      caption = "Hypothesis: Angry fishers fish alot") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
+  theme_bw()
+```
 
 
