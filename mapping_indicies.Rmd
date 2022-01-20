@@ -1,0 +1,38 @@
+---
+title: 'Part 2: Indices and Mapping'
+author: "Dylan Glave"
+date: "1/19/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+Loading in dataframe that I used `write.csv` to build. 
+For the purpose of exhaustive reproducilibity, please run to line [LINE THAT WRITE.CSV HHS_FILTERED IS ON]  or to completion before exploring this doucment. 
+Thanks for safe data science =). 
+```{r}
+hhs_complete_filtered <- read_csv()
+```
+
+
+
+
+we're adding 1 question to the Agreement index, either `x30_trust_local_decision` or `30_trust_regional_decision`
+
+I'll run a `corplot` how the two questions compare
+
+```{r}
+x30_compared <- 
+  hhs_complete_filtered %>% 
+  select(x30_trust_local_decision, x30_trust_regional_decision) %>% 
+  drop_na()
+
+corrplot(cor(x30_compared))
+
+```
+
+alright, they're highly correlated, we're going to stick with "local decision-makers"

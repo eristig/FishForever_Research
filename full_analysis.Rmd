@@ -36,6 +36,7 @@ library(RColorBrewer)
 library(forcats)
 library(viridis)
 library(data.table)
+library(treemap)
 
 ```
 
@@ -486,6 +487,11 @@ counts_44_45 <- hhs_all_complete %>%
   data.frame() %>% 
   clean_names() %>% 
   count(x44_meeting_attendance, x45_leadership_position) 
+
+counts_43 <- hhs_all_complete %>% 
+  data.frame() %>% 
+  clean_names() %>% 
+  count(x43_ma_benefits) 
 ```
 This filters out 1000s of observations, which we accept. We want to observe responses from fishers who took part in all the relevant survey questions. 
 
@@ -566,7 +572,7 @@ Now  columns [24:33] within `hhs_complete_filtered` are all of the Engagement an
 
 *12/27/21*
 
-We're adding 1 question to the Agrrement index, either `x30_trust_local_decision` or `30_trust_regional_decision`
+We're adding 1 question to the Agreement index, either `x30_trust_local_decision` or `30_trust_regional_decision`
 
 I'll run a `corplot` how the two questions compare
 
@@ -1569,6 +1575,27 @@ Both C1 and C4 (average fishers) have higher values in question x61g (willingnes
 
 
 
+Looking at Question 43 for Clusters 1 and 4. 
+I' make a df `checking_43` that dives into that survey question for the 2 clusters of interest.
+```{r}
+checking_43 <- scaled_km_df %>% 
+  select(x43_ma_benefits, x43_scaled, cluster_no) %>% 
+  filter(cluster_no %in% c('1', '4'))
+
+checking_43_counts <- checking_43 %>% 
+  group_by(cluster_no) %>% 
+  count(x43_ma_benefits)
+```
+
+Per the metadata
+*"43_ma_benefits: 1 (Yes), 0 (No), "*
+100% of Cluster 1 sees No benefit
+100% if Cluster 4 sees a benefit
+In total, 6500 said no, 6200 said yes. 
+Therefore, the means of exactly 1 and 0 are correct, because each clsuters has unanimous responses. 
+
+
+
 Below are updated plots, by cluster (1/6/22)
 ```{r}
 
@@ -2175,6 +2202,7 @@ ggplot(enforcement_counts,
       y = "Cluster",
       title = "Enforcement By Cluster", 
       color = "Cluster") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 1, size = 2, color = "gray1") +
     guides(colour = guide_legend(override.aes = list(size=7))) +
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
@@ -2190,13 +2218,71 @@ your community?
 5. There is no enforcement system"
 
 
-
-Dyl hypothesis: National government would show us less engaged fishers, while fishers will be more engaged when Fisheries Management Boards take responsibility for enforcement. 
-
-Curious question: What is the breakdown of those who say "Myself"? What is the N, where are they from, and how do they find themselves in Cluster?
+##### Comparing enforcement with Perceived Fish catch (Q19)
 
 
+```{r}
 
+enforcement_and_catch <- scaled_km_df %>% 
+  select(cluster_no, x19_current_fish_catch, x49_enforcement_responsible) %>% 
+  filter(x49_enforcement_responsible %in% c("Fisheries Management Body",
+                                            "National Government", 
+                                            "Subnational Government", 
+                                            "No enforcement system", 
+                                            "Myself")) %>% 
+  drop_na()
+
+x19_over_49 <- enforcement_and_catch %>% 
+  group_by(x49_enforcement_responsible) %>% 
+  count(x19_current_fish_catch)
+
+x49_over_19 <- enforcement_and_catch %>% 
+  group_by(x19_current_fish_catch) %>% 
+  count(x49_enforcement_responsible)
+
+```
+
+
+I'll visualize the two, and verbalize + write what what each ones tells us (i.e. what's different between the two.)
+
+```{r}
+ggplot(x19_over_49,
+       aes(x = x19_current_fish_catch, y = n, fill = x49_enforcement_responsible)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Enforcement Responsibility",
+      y = "N",
+      title = "Enforcement Against Perceived Catch", 
+      fill = "Enforcement Responsibility") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 1, size = 2, color = "gray1") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  scale_fill_viridis(discrete = T) 
+
+### Switching Axes
+ggplot(x49_over_19,
+       aes(x = x49_enforcement_responsible, y = n, fill = x19_current_fish_catch)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
+  labs( x = "Enforcement Responsibility",
+      y = "N",
+      title = "Enforcement Against Perceived Catch", 
+      fill = "Perceived Catch Change") +
+  geom_text(aes(label = n),position = position_fill(0.9), vjust = 1, size = 2, color = "gray1") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  scale_fill_viridis(discrete = T) 
+
+
+```
+
+What do we see? 
+
+When the X bins are Enforcement type, I think we see a better picture. Asking "how many folks, udner subnational enforcement saw no change if fish catch?" is easier than "OK, among those who saw a slight decline, how many have no enforcement system?" 
+ 
+We start with the institution (albeit perceived) and then step into the personal perception fo fish catch over time. 
+
+- FMB-responsibility has the highest amount of "improved (relative and absolute)
+- Subnational ahd the msot "Stayed the Same" (relative)
+- No enforcement or "myself" had the higher proportions of "Declined a lot." 
 
 
 
@@ -2486,7 +2572,6 @@ seafood_counts <- seafood_clean %>%
   count(x60_hh_fish_consumption) %>% 
  pivot_wider(names_from = cluster_no, values_from = n) 
 
-  rename('Cluster 1' = '1', 'Cluster 2' = '2', 'Cluster 3' = '3', 'Cluster 4' = '4', 'Cluster 5' = '5')
 
 
 
@@ -2881,10 +2966,6 @@ ggplot() +
   geom_point(data = three_part_64,
        aes(x = agree_mean, y = eng_mean,
            color = cluster_no, shape = x64_wrong_fishing_reserve), size = 1.1, alpha = 0.8) +
-  geom_point(data = mean_cluster_df,
-             aes(x = agree_mean, y = eng_mean,
-          color = cluster_no), 
-           size = 6, shape = "triangle", show.legend = FALSE) +
   labs( x = "Agreement (Scaled across 6 Questions)",
       y = "Engagement (Scaled across 5 Questions)",
       title = "Mapping Clusters",
@@ -3034,9 +3115,9 @@ ggplot(x17_cluster_counts,
   geom_bar(position="dodge", stat="identity", alpha = 0.8) +
   labs( x = "Clusters (1 and 4 are 'average')",
       y = "Total # of Fishers",
-      title = "Ability to cover family costs", 
-      fill = "Household funds are..", 
-      caption = "Hypothesis: insufficient funds = less engaged") +
+      title = "Fishing Effort in Offseason", 
+      fill = "Fishing Effort (Per Week)", 
+      caption = "Hypothesis: resistant fishers fish more") +
   geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
   theme_bw()
 ## Second figure will be another stacked barplot
@@ -3044,7 +3125,8 @@ ggplot(x17_cluster_counts,
 ```
 
 This is rad! I'm going to code away at x18, and then do a little more interpreting. 
-
+Notes:
+- 
 
 ```{r}
 x18_fishing_effort <- scaled_km_df %>% 
@@ -3081,4 +3163,104 @@ ggplot(x18_cluster_counts,
   theme_bw()
 ```
 
+##### Household Demographics (Question 7)
 
+
+I'll first make a df that includes all of subquestions of Q7. 
+```{r}
+question_7_analysis <- scaled_km_df %>% 
+  select(cluster_no, agree_mean, eng_mean, x70_hh_average_income, x7_gender, x7_age, x7_relationship, x7_education, household_size)
+```
+
+
+```{r}
+q7_reordered <- question_7_analysis %>% 
+  arrange(cluster_no)
+
+fish_treeable <- q7_reordered %>% 
+  select(cluster_no, x7_gender, x7_age, x7_relationship, x7_education, household_size) %>% 
+  group_by(cluster_no)
+
+treemap(fish_treeable,
+        index= c("cluster_no", "household_size"),
+vSize="household_size",
+type="index")
+```
+
+OK, this hasn't worked out great. It works better with labels, huh. 
+
+
+Let's try the same graph type we did earlier, comparing Clusters with..HH size 
+
+
+
+Most households have 3, 4 or 5 members. Beyond that, there isn't a whole lot to gain from this comparison. 
+
+Let's edit ages into several groups 
+
+```{r}
+binned_age <- question_7_analysis %>%
+  mutate(agegroup = case_when(               x7_age >= 60  ~ '60+',
+                                             x7_age >= 50  & x7_age <= 59 ~ '40-49',
+                                             x7_age >= 40  & x7_age <= 49 ~ '40-49',
+                                             x7_age >= 30  & x7_age <= 39 ~ '30-39',
+                                             x7_age >= 20  & x7_age <= 29 ~ '20-29',
+                                             x7_age <= 20 ~ "19 and Under"))
+
+agegroup_counts <- binned_age %>% 
+  drop_na(agegroup) %>% 
+  group_by(cluster_no) %>% 
+  count(agegroup)
+
+
+```
+
+I broke ages of respondents into 6 groups. This may be too many to visualize alongside all 4 Clusters. 
+
+```{r}
+ggplot(agegroup_counts,
+       aes(x = cluster_no, y = n, fill = agegroup)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Fishers per Group",
+      title = "What age are the Clusters?", 
+      fill = "Age Group", 
+      caption = "Hypothesis: Older fishers are more engaged") +
+   geom_text(aes(label = n),position = position_fill(0.9), vjust = 2, size = 2, color = "gray1")+
+   scale_fill_viridis(discrete = T) +
+  theme_bw()
+```
+Ok, what do we see?! 
+
+There were so many respondents under 20, wow! Perhaps I should be looking at 'household heads' if we really wanted this analysis of fisher ages. This is still interesting. 
+
+Cluster 3 has a small proportion of older fishers, and a huge contingent of respondents under 20. About 50% of each cluster is 30 and under (and likewise 30 and over)
+
+
+Let's do 1 more subsection of Q7. Binned HHS size? Or Relationship? I'll start with relationship. 
+
+```{r}
+relationship_counts <- question_7_analysis %>% 
+  drop_na(x7_relationship) %>% 
+  filter(x7_relationship != "Other") %>%
+  filter(x7_relationship != "Other parent") %>%
+  filter(x7_relationship != "Domestic help") %>%
+  filter(x7_relationship != "Aquaintance") %>% 
+  group_by(cluster_no) %>%
+  count(x7_relationship)
+```
+
+```{r}
+ggplot(relationship_counts,
+       aes(x = cluster_no, y = n, fill = x7_relationship)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Fishers per Group",
+      title = "Differences in Respondent Type", 
+      fill = "Household Role of Respondent", 
+      caption = "Hypothesis: Older fishers are more engaged") +
+   geom_text(aes(label = n),position = position_fill(0.9), vjust = 2, size = 2, color = "gray1")+
+   scale_fill_viridis(discrete = T) +
+  theme_bw()
+```
+This is challenging because we're not likely seeing responses from the fisher of each house, rather we hear from whomever was home. If this happened to show spouses who were the fishers, vs. child fishers, etc... that would be more insightful. I'll bring this up to the group. 
