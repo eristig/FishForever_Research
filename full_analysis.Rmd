@@ -67,7 +67,7 @@ hhs_all <- read_csv(here::here("new_portal_data", "hh_surveys_all.csv"))
 hhs_q44 <- read_csv(here::here("new_portal_data","hh_q44.csv"))
 hhs_q45 <- read_csv(here::here("new_portal_data","hh_q45.csv"))
 hhs_q48 <- read_csv(here::here("new_portal_data","hh_q48.csv"))
-hhs_q7 <- read_csv(here::here("new_portal_data","hh_q7.csv"))
+hhs_q7 <- read_csv(here::here("new_portal_data","hh_people_all.csv"))
 
 
 ```
@@ -359,13 +359,15 @@ hhs_all_45 <- right_join(hhs_q45_dupes, hhs_all_48, by = "submissionid")
 
 hhs_all_7 <- right_join( hhs_all_45, q7_df, by = "submissionid")
 
-hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_7, by = "submissionid")
+hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_7, by = "submissionid") %>% 
+  rename(country = country.x) %>% 
+  rename(ma_name = ma_name.x)
 
 write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
 
 # No need to run the above code again, I have already written a .csv with the joined datasets
 
-hhs_all_complete <- read_csv("hhs_all_complete.csv")
+hhs_all_complete <- read_csv("hhs_all_complete.csv") 
 ```
 
 
@@ -3264,3 +3266,55 @@ ggplot(relationship_counts,
   theme_bw()
 ```
 This is challenging because we're not likely seeing responses from the fisher of each house, rather we hear from whomever was home. If this happened to show spouses who were the fishers, vs. child fishers, etc... that would be more insightful. I'll bring this up to the group. 
+
+
+
+Let's make a CSV of `scaled_km_df` so we can have a single .Rmd file for the Paper Figures and their asssociated tests. 
+
+
+```{r}
+write.csv(scaled_km_df, file = "scaled_km_df.csv")
+```
+
+
+###### First Figure: Enforcement Responsibility 
+
+
+*Chi-Squared Test*
+Null: There is no significant difference between the Cluster makeup of each bucket of enforcement responsibility
+Alternative: there is a menaingful difference between the compliance behaviors of each enforcement responsoibility
+```{r}
+enforcement_counts_table <- enforcement_counts %>% 
+   pivot_wider(names_from = x49_enforcement_responsible, values_from = n) %>% 
+  rename(Cluster = cluster_no)
+
+enforcement_counts_prop <- enforcement_counts_table %>% 
+  janitor::adorn_percentages(denominator = "col") %>% 
+  adorn_pct_formatting(digits = 0) %>% 
+  adorn_ns(position = "front")
+
+
+enforcement_counts_prop
+
+```
+Nicer version of this table
+
+```{r}
+kable(enforcement_counts_prop) %>% 
+  kable_styling()
+```
+
+Now let's run the Chi-Squared test. 
+
+
+```{r}
+enforcement_pre_chi <- enforcement_counts_table %>% 
+  select(-Cluster)
+
+enforcement_chi <- chisq.test(enforcement_pre_chi)
+
+enforcement_chi
+```
+
+
+

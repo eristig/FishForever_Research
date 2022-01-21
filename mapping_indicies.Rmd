@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
 
@@ -36,3 +37,31 @@ corrplot(cor(x30_compared))
 ```
 
 alright, they're highly correlated, we're going to stick with "local decision-makers"
+
+
+
+
+##### Testing our Data 
+
+
+1. Confirmatory Factor Analysis
+
+Question:
+
+Test: 
+
+Result: 
+
+
+2. Chi-Squared testing on our different Figure data 
+
+Are our different *categorial* variables different from one another? 
+
+Starting with
+
+
+
+
+
+
+
