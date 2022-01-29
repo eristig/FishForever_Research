@@ -2,7 +2,8 @@
 title: "knitting_test"
 author: "Dylan Glave"
 date: "1/20/2022"
-output: html_document
+output:
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}

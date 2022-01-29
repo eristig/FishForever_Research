@@ -1,0 +1,468 @@
+---
+title: "Mapping Indices + Supplementary Cluster Material"
+author: "Dylan Glave"
+date: "1/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning= FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(plyr)
+library(tidyverse)
+library(here)
+library(janitor)
+library(tidyverse)
+library(kableExtra)
+library(knitr)
+library(lavaanPlot)
+library(lavaan)
+library(naniar)
+library(here)
+library(scales)
+library(foreign)
+library(nnet)
+library(reshape2)
+library(vtable)
+library(stargazer)
+library(viridis)
+library(NbClust)
+library(car)
+library(corrplot)
+library(RColorBrewer)
+library(forcats)
+library(viridis)
+library(data.table)
+# library(treemap)
+library(fmsb)
+
+```
+
+## R Markdown
+
+This Document can be considered the "middle" of our analysis. The data has already been cleaned in `FF_cleaning_part_1` 
+*For Maximum reproducibility, please run `FF_cleaning_part_1` before running this document, in case any changes have been made to the made to `scaled_sum.csv`.  This file has the cleaned, wrangled, and filtered data that apply to our Index Mapping, Cluster analysis, CFA all other visualizations and analysis.  
+
+
+We start by reading in  in data via `scaled_sum`
+
+```{r}
+scaled_sum <- read.csv("scaled_sum.csv")
+hhs_all_complete <- read_csv("hhs_all_complete.csv")
+```
+
+
+We want to include a point where all responses are "neutral" on our map of compliance behaviors
+```{r}
+neutral_point <- scaled_sum %>% 
+filter(country == "NEUTRAL")
+  
+```
+
+
+#### Mapping Indices
+
+We now have one (x,y) point for each fisher observation, and can map them onto an X-Y plane of Agreement and Engagement. 
+
+
+```{r}
+  ggplot(data = scaled_sum,
+                      aes(x = agree_mean, y = eng_mean)) +
+   geom_point(color = "darkblue", size = 0.7, alpha = 0.4) +
+  geom_point(data = neutral_point, aes(x = agree_mean, y = eng_mean),
+             size = 8, color = "pink2") +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+#  scale_color_viridis(discrete = TRUE, option = "D") +
+    # scale_x_continuous(limits = c(-3, 1.7),
+    #                   breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme_bw() 
+
+```
+*Figure 1: A plot with the **neutral* fisher reported within the  spread of our Z-score-based indices. We see that Ms. Neutral is 1 SD below the mean in agreement. This location means that the majority of fishers at least somewhat agree with rules in place. Meanwhile, we see dense grouping between -0.5 and 0.5 on both axes. Quite a few fishers have the maximum score for agreement, while a smaller number meet the *ceiling* of engagement. 
+
+
+Rare seems quite interested in addressing how fishers may be willing to *engage* more. 
+
+Let's figure out the *counts* for those two ceiling locations. 
+
+```{r}
+agree_ceiling_counts <- scaled_sum %>% 
+  group_by(agree_mean) %>% 
+  count() %>% 
+  arrange(!n)
+```
+The lowest score is -2.94 , N=1
+Max score = 1.07, N = 124
+As shown visually, many fishers agree with rules fully, far fewer engage as fully as possible. 
+
+
+```{r}
+eng_ceiling_counts <- scaled_sum %>% 
+  group_by(eng_mean) %>% 
+  count() %>% 
+  arrange(!n)
+
+
+ceiling_counts <- scaled_sum %>% 
+  mutate(across(where(is.numeric), ~ round(., 2))) %>% 
+  group_by(eng_mean, agree_mean) %>% 
+  count() %>% 
+  arrange(n)
+
+```
+*Engagement*
+Max value = 1.6, N=25
+
+Lowest value = -1.74, N=1 
+
+Let's look at a density plot of all fishers
+```{r}
+ggplot(data = scaled_sum,
+                      aes(x = agree_mean, y = eng_mean)) +
+   geom_bin2d(bins = 20) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+#  scale_color_viridis(discrete = TRUE, option = "D") +
+   scale_x_continuous(limits = c(-2.5, 1.7),
+                     breaks = c(-2, -1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.5)) +
+   scale_y_continuous(limits = c(-1.5, 1.5),
+                     breaks = c( -1, 0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.5)) +
+  # guides(colour = guide_legend(override.aes = list(size=7))) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+
+```
+*Figure 2: Density plot of the ~3200  responses. This allows us to see where points overlap, which was challenging in the first figure. We see a wide density field between -0.5 and 0.5 on the agreement axis, and -0.5 and 0.25 on the engagement axis; The densest group lies just below ) on both axes. We also find a dense bundle of fishery "leaders" right at (0,1.)  
+
+Some of the modes:
+
+1. (-0.15, 0.98) N=63
+2. (=0.06, -0.46) N=59
+3. (0.27, -0.23) N=52
+4. (0.47, -0.65) N = 36
+
+
+
+
+
+```{r}
+ ggplot(data = scaled_sum,
+       aes(x = agree_mean, y = eng_mean, color = country)) +
+ geom_point(size = 0.7, alpha = 0.7) +
+  theme_bw()
+```
+*When we look at countries, Honduras accounts for the majority of outliers (very low agreement.) Generally we see that each country includes a spread of fishers across the map of compliance attitudes; The Philippines has the most responses by a large margin.* 
+
+
+
+### Below are some experiments with different-scales of the index. They are NOT part of the final analysis. 
+
+Remaking indices without relative scales 
+
+First, I'll use `raw_eng_mean` and `raw_agree_mean` to see the spread of fisher attitudes
+
+
+
+- The "neutral point" is **(0.6, 6)**
+
+I now want to see the stats of the raw means, vs. the scaled means. 
+First, I make a sf called `four_means` that includes: `raw_agree_mean` `raw_eng_mean` `agree_mean` and `eng_mean`
+```{r}
+
+four_means <- scaled_sum %>% 
+  select(raw_agree_mean, raw_eng_mean, agree_mean, eng_mean)
+
+
+st(four_means)
+```
+*Raw Agreement*
+Mean = 2.21
+sd = .40
+Range: 0.7-3
+pct. 25 = 2
+pct. 75 = 3
+
+*Raw Engagement*
+Mean = 0.6 (same as the neutral point)
+sd = 0.52
+Range: -0.8 - 2
+pct. 25 = 0.2
+pct. 75 = 1
+
+Within Agreement, the average response is positive, a majority of folks respond 1 sd above Neutral. With Engagement, we see a a mean of 0.6, which is right at "neutral" and a more normal distribtuion from there. 
+
+```{r}
+
+mapping_63 <- scaled_sum %>% 
+  drop_na(x63_fishing_in_reserve)
+
+
+```
+
+
+
+I want to see how many people said "yes" here: 
+
+```{r}
+
+counts_63 <- scaled_sum %>% 
+  count(x63_fishing_in_reserve, country)
+
+filtered_63 <- scaled_sum %>% 
+  filter(x63_fishing_in_reserve == "1")
+
+ggplot(data = filtered_63,
+                      aes(x = agree_mean, y = eng_mean)) +
+  geom_point(color = "darkblue", size = 1.2, alpha = 1,
+             show.legend = TRUE) +
+labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engange and Agreement of Admitted rule-breakers") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  theme_bw() 
+
+
+```
+*Figure 4: A graph of Agreement and Engagement measures, colored by responses of "Do you fish inside the reserve?" These fishers range * 
+
+Question 63 asks if fishers break the rules, and fish in the reserve. This would be a classic measure of compliance (although self-reporting likely leads to a lower N of admitted non-compliers)
+
+*138* fishers admitted that they fish in the reserve, while 2800 said they do not. The question we're left with is: What is different about folks who *admit* to breaking rules? These "Yes" rule-breakers are spread relatively evenly across all countries. 
+Maybe they don't think there are sanctions, their community doesn't care about it
+
+I'll do the same "rule-breaker" analysis, but against the question, "Out of 10 people in your community, how many people…Fished in the reserve in the last month"
+
+`51b_fishers_reserves`
+
+```{r}
+breaking_rules <- 
+  scaled_sum %>% 
+  drop_na(x51b_fishers_reserves) %>% 
+  select(x51b_fishers_reserves, eng_mean, agree_mean) %>% 
+  filter(x51b_fishers_reserves != 82)
+
+breaking_rules_1 <- ggplot(data = breaking_rules,
+                      aes(x = agree_mean, y = eng_mean, color = x51b_fishers_reserves)) +
+   geom_point(size = 0.7, alpha = 0.7) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 6 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+#  scale_color_viridis(discrete = TRUE, option = "D") +
+    scale_x_continuous(limits = c(-3, 1.7),
+                      breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  scale_color_viridis( option = "D") +
+  theme_bw() 
+
+breaking_rules_1
+
+more_breaking_rules <- 
+  scaled_sum %>% 
+  drop_na(x51b_fishers_reserves) %>% 
+  select(x51b_fishers_reserves, eng_mean, agree_mean) %>% 
+  filter(x51b_fishers_reserves != 82) %>% 
+  filter(x51b_fishers_reserves >= 5)
+
+breaking_rules_2 <- ggplot(data = more_breaking_rules,
+                      aes(x = agree_mean, y = eng_mean, color = x51b_fishers_reserves)) +
+   geom_point(size = 0.7, alpha = 0.7) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 6 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+#  scale_color_viridis(discrete = TRUE, option = "D") +
+    scale_x_continuous(limits = c(-3, 1.7),
+                      breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  scale_color_viridis( option = "D") +
+  theme_bw() 
+
+
+breaking_rules_2 
+```
+What do I see here? 
+
+Figure 5a. The left-most observations report that their neighbors all or mostly fish in the reserve. 
+- We see the "10" response (everyone fishes in the reserve) in every section of the map. Very few in the fully-agreeing section, but some average fishers and highly-engaged fishers, respectively, perceive high rule-breaking in their fishing reserve. 
+- The majority of responses say between 0 and 3 (out of 10) of their neighboring fishers fish within the reserve boundary.
+
+Figure 5b.: *This is really interesting!* 
+
+Here we only see responses of fishers who perceived that more than half of their community fishes in the no-take reserve. 
+The very-low agreement observations are here, but many high-engagement fishers alsos ay that 10/10 neighbors fish in the reserve. 
+Do they just think that practice is OK? Or might they be engaged to try and curb those efforts? Engaged folks maybe see the reality a bit better than those who are "hopeful" about conservation? fascinating. 
+
+
+
+
+
+
+----
+*Side note, there was curiosity if we could use a predictive model*
+Potential Regression Model: 
+[https://stats.idre.ucla.edu/r/dae/multinomial-logistic-regression/]
+
+
+##### Statistical Summaries of Agreement and Engagement
+
+Making some tables and graphs for Claudia + Rare: 
+
+
+```{r}
+
+hhs_scaled_character <- scaled_sum %>% 
+  as.character(c(24:34))
+  
+
+engage_scaled_sum <- scaled_sum %>%
+  select(24:28)
+  
+st(engage_scaled_sum)
+
+
+agree_scaled_sum <- scaled_sum %>% 
+  select(29:33)
+
+
+st(agree_scaled_sum)
+```
+
+Great, here we see basic statistics for each component of these two indices! 
+
+
+
+
+##### Measuring Brazil
+
+*After a sensitivity analysis, we now include 756 Brazilian observations*
+
+**Bottom-line: I did a sensitivity analysis on our indices on Brazil, where not all questions were asked (or documented.) This helped us finalize our indices, while questions about "knowledge of rules" or others may be very useful in further studies of Engagement and Agreement, or any other compliance behavior measure.** 
+
+Previously, Brazil was excluded, due to question we included in the Agreement index (Q64) that was not asked in Brazil.
+
+- There are 1592 observations from Brazil
+- Brazilian fishers were not asked questions 62 and 64
+- When we filter for our remaining Index questions, we end up with 
+
+
+```{r}
+brazil <- hhs_all_complete %>% 
+  data.frame() %>% 
+  clean_names() %>% 
+  filter(country == "BRA") %>% 
+  drop_na(x44_meeting_attendance, x45_leadership_position,
+x48_enforcement_participation,  x53_encourage_regulations,
+ x61g_fishing_change_behavior,
+            x43_ma_benefits, x46_represent_interests,  x52_ma_benefit_5yrs, x53_encourage_regulations, x61a_current_regulations, x61f_rights_distribution_fair,
+x30_trust_local_decision)
+
+
+```
+We retained `x30_trust_local_decision` but excluded `x67_reserve_boundry` which only 11 responses. Now our fuller indices include 819 observations from Brazil. 
+
+
+
+
+
+
+**Per Steve and Chris' feedback, I am going to manually relevel the indices to a substantive (non-relative) scale, as shown below**
+
+- Questions with *-1, 0, 1* will remain the same
+- Questions on a *1-5* or *-2-2* scale will transform into a *-1, -0.5, 0, 0.5, 1* scale, and from there we will take the means. 
+
+The following attempt to create a scaled (without Z-scores, is on hold as of 12/6/21. Contact D Glave to edit/advance)
+```{r}
+raw_index_leveling <- scaled_sum %>%
+  select(country, x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair,x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior) %>%
+mutate(x61f_rights_distribution_fair= (x61f_rights_distribution_fair-3)/2) %>% 
+  mutate(x61a_current_regulations= (x61a_current_regulations-3)/2) %>% 
+  mutate(x53_encourage_regulations= x53_encourage_regulations/2) %>% 
+  mutate(x61g_fishing_change_behavior = (x61g_fishing_change_behavior-3)/2) %>% 
+  mutate(eng_mean = mean(x44_meeting_attendance + x45_leadership_position + x48_enforcement_participation + x53_encourage_regulations + x61g_fishing_change_behavior)) %>% 
+mutate(agree_mean = mean(x43_ma_benefits + x46_represent_interests + x52_ma_benefit_5yrs + x61a_current_regulations + x61f_rights_distribution_fair))
+  
+
+  
+```
+
+**NOTE: `raw_index_leveling` is a bit funky. We leveled each 1-5 response into [-1, -0.5, 0, 0.5, 1]**
+
+We want to see a non-relative index measure, which leaves us with much less variation in possible outcomes (potential locations on an X-Y map.)
+This tricky step happens because we don't want a step from "4" to "5" in likert to be the same as a step from "Neutral" to "Yes" on a binary question. But we sort of have to. 
+
+
+Let's visualize this version
+
+
+```{r}
+
+ggplot(data = raw_index_leveling,
+                      aes(x = agree_mean, y = eng_mean)) +
+   # geom_point(color = "darkblue", size = 0.7, alpha = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+ geom_bin2d(bins = 50) +
+   scale_color_viridis(discrete = TRUE, option = "D") +
+   # scale_x_continuous(limits = c(-2.5, 1.7),
+   #                   breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme_bw()
+
+```
+
+
+
+```{r}
+# index_table_df <- scaled_sum %>% 
+#   select(country, eng_mean, agree_mean) %>% 
+#   rename("Relative Engagement Score" = eng_mean) %>% 
+#   rename("Relative Agreement Score" = agree_mean)
+# 
+# 
+# index_table_k <- head(index_table_df) %>% 
+#   kable( format = "html", caption = "Engagement and Agreement Index Scores") %>% 
+#   kable_styling(bootstrap_options = "striped", 
+#                 full_width = F,
+#                 position = "left") %>% 
+# collapse_rows(columns = 3, valign = "middle")
+# 
+# index_table_k
+
+```
+
+
+```{r}
+checking_43 <- scaled_km_df %>% 
+  select(x43_ma_benefits, x43_scaled, cluster_no) %>% 
+  filter(cluster_no %in% c('1', '4'))
+
+checking_43_counts <- checking_43 %>% 
+  group_by(cluster_no) %>% 
+  count(x43_ma_benefits)
+```
+
+Per the metadata
+*"43_ma_benefits: 1 (Yes), 0 (No), "*
+100% of Cluster 1 sees No benefit
+100% if Cluster 4 sees a benefit
+In total, 6500 said no, 6200 said yes. 
+Therefore, the means of exactly 1 and 0 are correct, because each clsuters has unanimous responses. 
+
+
+
+

@@ -1,0 +1,205 @@
+---
+title: "Figures for Paper"
+author: "Dylan Glave"
+date: "1/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(plyr)
+library(tidyverse)
+library(here)
+library(janitor)
+library(tidyverse)
+library(kableExtra)
+library(knitr)
+library(lavaanPlot)
+library(lavaan)
+library(naniar)
+library(here)
+library(scales)
+library(foreign)
+library(nnet)
+library(reshape2)
+library(vtable)
+library(stargazer)
+library(viridis)
+library(NbClust)
+library(car)
+library(corrplot)
+library(RColorBrewer)
+library(forcats)
+library(viridis)
+library(data.table)
+# library(treemap)
+library(fmsb)
+```
+
+## R Markdown
+
+
+##### Reading in Data
+
+
+```{r}
+scaled_sum <- read.csv("scaled_sum.csv")
+hhs_all_complete <- read_csv("hhs_all_complete.csv")
+scaled_km_df <- read_csv("scaled_km_df.csv")
+```
+
+
+We want to include a point where all responses are "neutral" on our map of compliance behaviors
+```{r}
+neutral_point <- scaled_sum %>% 
+filter(country == "NEUTRAL")
+  
+```
+
+
+#### 1.  Mapping Indices
+
+We now have one (x,y) point for each fisher observation, and can map them onto an X-Y plane of Agreement and Engagement. 
+
+
+```{r}
+  ggplot(data = scaled_sum,
+                      aes(x = agree_mean, y = eng_mean)) +
+   geom_point(color = "darkblue", size = 0.7, alpha = 0.4) +
+  geom_point(data = neutral_point, aes(x = agree_mean, y = eng_mean),
+             size = 8, color = "pink2") +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+#  scale_color_viridis(discrete = TRUE, option = "D") +
+    # scale_x_continuous(limits = c(-3, 1.7),
+    #                   breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme_bw() 
+
+```
+*Figure 1: A plot with the **neutral* fisher reported within the  spread of our Z-score-based indices. We see that Ms. Neutral is 1 SD below the mean in agreement. This location means that the majority of fishers at least somewhat agree with rules in place. Meanwhile, we see dense grouping between -0.5 and 0.5 on both axes. Quite a few fishers have the maximum score for agreement, while a smaller number meet the *ceiling* of engagement. 
+
+
+Rare seems quite interested in addressing how fishers may be willing to *engage* more. 
+
+
+#### 2. Compliance Behaviors of Admitted rule-breakers 
+```{r}
+
+counts_63 <- scaled_sum %>% 
+  count(x63_fishing_in_reserve, country)
+
+filtered_63 <- scaled_sum %>% 
+  filter(x63_fishing_in_reserve == "1")
+
+ggplot(data = filtered_63,
+                      aes(x = agree_mean, y = eng_mean)) +
+  geom_point(color = "darkblue", size = 1.2, alpha = 1,
+             show.legend = TRUE) +
+labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engange and Agreement of Admitted rule-breakers") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  theme_bw() 
+
+
+```
+*Figure 4: A graph of Agreement and Engagement measures, colored by responses of "Do you fish inside the reserve?" These fishers range * 
+
+Question 63 asks if fishers break the rules, and fish in the reserve. This would be a classic measure of compliance (although self-reporting likely leads to a lower N of admitted non-compliers)
+
+*138* fishers admitted that they fish in the reserve, while 2800 said they do not. The question we're left with is: What is different about folks who *admit* to breaking rules? These "Yes" rule-breakers are spread relatively evenly across all countries. 
+Maybe they don't think there are sanctions, their community doesn't care about it
+
+I'll do the same "rule-breaker" analysis, but against the question, "Out of 10 people in your community, how many people…Fished in the reserve in the last month"
+
+
+#### 3. Full Cluster Map
+Here, I've attached the summary statistics of the Clusters. We ahve them on hand for tables, individual stats, Chi-Squared tests, etc. 
+```{r}
+ 
+
+
+cluster_summary_df <- scaled_km_df %>% 
+  group_by(cluster_no) %>% 
+  summarise(eng_mean = mean(eng_mean),
+            agree_mean  = mean(agree_mean),
+            x44_mean = mean(x44_meeting_attendance),
+            x45_mean = mean(x45_leadership_position),
+            x48_mean = mean(x48_enforcement_participation),
+            x53_mean = mean(x53_encourage_regulations),
+            x61g_mean = mean(x61g_fishing_change_behavior), 
+            x43_mean =  mean(x43_ma_benefits),
+            x46_mean = mean(x46_represent_interests),
+           x52_mean = mean(x52_ma_benefit_5yrs),
+           x61a_mean = mean(x61a_current_regulations),
+           x61f_mean = mean(x61f_rights_distribution_fair),
+           x30a_mean = mean(x30_trust_local_decision),
+           x44_median = median(x44_meeting_attendance),
+            x45_median = median(x45_leadership_position),
+            x48_median = median(x48_enforcement_participation),
+            x53_median = median(x53_encourage_regulations),
+            x61g_median = median(x61g_fishing_change_behavior), 
+            x43_median =  median(x43_ma_benefits),
+            x46_median = median(x46_represent_interests),
+           x52_median = median(x52_ma_benefit_5yrs),
+           x61a_median = median(x61a_current_regulations),
+           x61f_median = median(x61f_rights_distribution_fair),
+            x30a_median = median(x30_trust_local_decision)) %>% 
+  mutate(across(where(is.numeric), ~ round(., 2)))
+## Here, the last line of code rounds to the second decimal 
+
+cluster_medians <- cluster_summary_df %>% 
+  select(1, 14:23) 
+
+cl_mean_graphable_df <- cluster_summary_df %>% 
+  select(eng_mean, agree_mean, cluster_no)
+
+
+
+scaled_cluster_counts <- scaled_km_df %>% 
+  count(cluster_no)
+
+
+ggplot() +
+  geom_point(data = scaled_km_df,
+       aes(x = agree_mean, y = eng_mean,
+           color = cluster_no),
+           size = 0.7, alpha = 0.7) +
+   geom_point(data = cl_mean_graphable_df,
+             aes(x = agree_mean, y = eng_mean,
+          color = cluster_no),
+           size = 6, shape = "triangle", show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mapping Clusters",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+```
+The 4 Clusters, done marked by color. Means are marked by triangles. 
+
+
+Between Cluster 1 and 4 (our "average" fishers,) we see that C4 is a full sd higher on question 43 "Do you think there is any benefit to regulating fishing via a managed access area and a reserve area?"
+
+Both C1 and C4 (average fishers) have higher values in question x61g (willingness to change fishing behavior for the sake of conservation,) and they slightly disagree with "encouraging others to follow regulations."
+
+*Average* fishers aren't engaging much (including meeting attendance.) From an NGO perspective, if one wants to shift fisher behavior+attitudes, then try and bring the reluctant folks into the governance process.  
+
+#### 4. Perceived Catch + Clusters
+
+```{r}
+
+```
+
+

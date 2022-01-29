@@ -2,18 +2,14 @@
 title: 'Part 1: Cleaning, Wrangling, etc.'
 author: "Dylan Glave"
 date: "1/19/2022"
-output: html_document
+output:
+  html_document
 ---
 
 
-```{r setup, include=FALSE, warning=FALSE, message=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
-
-```
-
-
-```{r}
 library(plotly)
 library(plyr)
 library(tidyverse)
@@ -23,8 +19,8 @@ library(tidyverse)
 library(kableExtra)
 library(knitr)
 library(lavaanPlot)
-# library(lavaan)
-# library(naniar)
+library(lavaan)
+library(naniar)
 library(here)
 library(scales)
 library(foreign)
@@ -40,9 +36,10 @@ library(RColorBrewer)
 library(forcats)
 library(viridis)
 library(data.table)
-library(treemap)
-```
+# library(treemap)
+library(fmsb)
 
+```
 
 ## R Markdown
 
@@ -71,7 +68,7 @@ hhs_all <- read_csv(here::here("new_portal_data", "hh_surveys_all.csv"))
 hhs_q44 <- read_csv(here::here("new_portal_data","hh_q44.csv"))
 hhs_q45 <- read_csv(here::here("new_portal_data","hh_q45.csv"))
 hhs_q48 <- read_csv(here::here("new_portal_data","hh_q48.csv"))
-hhs_q7 <- read_csv(here::here("new_portal_data","hh_q7.csv"))
+hhs_q7 <- read_csv(here::here("new_portal_data","hh_people_all.csv"))
 
 
 ```
@@ -87,7 +84,7 @@ However, the goal of this analysis is to see if any single member of a household
 
 To do so, we creates several df with the name `dupes...`
 
-```{r}
+```{r, echo = TRUE}
 # Check dupes for all questions
 dupes_44 <- data.frame(table(hhs_q44$submissionid)) %>% 
   dplyr::rename(submissionid = Var1)
@@ -101,7 +98,7 @@ dupes_48 <- data.frame(table(hhs_q48$submissionid)) %>%
 
 The chunks below use recode_factor() to change cells within Qs 44, 45, and 48 to each have a single answer. 
 
-```{r}
+```{r, echo=TRUE}
 # Cleaning data
 # Question 44
 hhs_q44_dupes <- hhs_q44 %>% 
@@ -172,7 +169,7 @@ End result: 1 observation for each submission ID
 
 Note: After Larissa did all the cleaning below, there was an issue with the `recode()` function. Dylan replaced each of these with `recode_factor()` and all factor levels are fine. 
 
-```{r}
+```{r, echo=TRUE}
 # Question 45
 hhs_q45_dupes <- hhs_q45 %>% 
   inner_join(dupes_45, hhs_q45, by = "submissionid") %>% 
@@ -235,7 +232,7 @@ hhs_q45_dupes <- hhs_q45_dupes %>%
 
 
 Below, the same happens for question 48
-```{r}
+```{r, echo=TRUE}
 
 hhs_q48_dupes <- hhs_q48 %>% 
   inner_join(dupes_48, hhs_q48, by = "submissionid") %>% 
@@ -318,7 +315,7 @@ hhs_q48_dupes <- hhs_q48_dupes %>%
 I'm quite interested in question, which is its own CSV. What does that mean? It means I ahve to do the same duplicate process ass q 44, 45, and 48. 
 
 
-```{r}
+```{r, echo=TRUE}
 
 
 dupes_7 <- data.frame(table(hhs_q7$submissionid)) %>% 
@@ -355,7 +352,7 @@ Again, `recode()` has been switched to `recode_factor()` for question 48
 
 After recoding/cleaning, these different df were all combined into `hhs_complete_all` using `right_join`
 
-```{r}
+```{r, echo=TRUE}
 # Join the datasets after all the cleaning is done
 hhs_all_48 <- right_join(hhs_q48_dupes, hhs_all, by = "submissionid")
 
@@ -363,13 +360,15 @@ hhs_all_45 <- right_join(hhs_q45_dupes, hhs_all_48, by = "submissionid")
 
 hhs_all_7 <- right_join( hhs_all_45, q7_df, by = "submissionid")
 
-hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_7, by = "submissionid")
+hhs_all_complete <- right_join(hhs_q44_dupes, hhs_all_7, by = "submissionid") %>% 
+  rename(country = country.x) %>% 
+  rename(ma_name = ma_name.x)
 
 write.csv(hhs_all_complete, file = "hhs_all_complete.csv")
 
 # No need to run the above code again, I have already written a .csv with the joined datasets
 
-hhs_all_complete <- read_csv("hhs_all_complete.csv")
+hhs_all_complete <- read_csv("hhs_all_complete.csv") 
 ```
 
 
@@ -378,10 +377,38 @@ On 12/15/21, we reloaded the `"hhs_all"` CSV file, which now includes question 4
 1. Marine Reserve/No-Take Area
 2. Fisheries Management Area (MPA, Managed Access Area, etc.) 3. Fisheries Management Body"*
 
+Possible answers include: 
+
+2] "marine reserve"                                   
+ [3] "management area,marine reserve,management body"   
+ [4] "marine reserve,management area,management body"   
+ [5] "management body,management area,marine reserve"   
+ [6] "management area"                                  
+ [7] "management area,management body"                  
+ [8] "marine reserve,management area"                   
+ [9] "management area,management body,marine reserve"   
+[10] "management body"                                  
+[11] "na"                                               
+[12] "marine reserve,management body"                   
+[13] "marine reserve,management body,management area"   
+[14] "management area,marine reserve"                   
+[15] "management body,marine reserve"                   
+[16] "management body,marine reserve,management area"   
+[17] "management body,management area"                  
+[18] "na,marine reserve"                                
+[19] "na,marine reserve,management area"                
+[20] "na,management area"                               
+[21] "marine reserve,na"                                
+[22] "na,marine reserve,management area,management body"
+[23] "management area,na"                               
+[24] "none"                                             
+[25] "marine reserve,management body,na"                
+[26] "marine reserve,none"        
+
+Let's..rename some of these. 
 
 
-
-```{r}
+```{r, echo=TRUE}
 
 
 hhs_all_complete_4_test <- hhs_all_complete %>% 
@@ -422,7 +449,7 @@ counts_x4 <-
 
 Here is a quick summary table of the total number of responses, which matches the **original** number of surveys completed
 17712
-```{r}
+```{r, echo=TRUE}
 
 # Get list of all reserves by country & how many HH surveys were answered
 summary <- hhs_all_complete %>% 
@@ -450,15 +477,14 @@ This marks the end of the "cleaning" data section. The final two dataframes
 *Goal: A robust df with only observations (survey respondents) who have answered every engagement and agreement question.*
 
 Engagement includes questions 44, 45, 48, 53, 61g.  
-Agreement includes questions 43, 46, 52, 61a, 61f.  
-NOTE TO DYL - ADD SOMETHING ABOUT THESE VARIABLES
+Agreement includes questions 43, 46, 52, 61a, 61f, 30a
 
 This will be called **`hhs_complete_filtered`**
 
 First, let me get counts of the NAs that we are changing to neutral for Q 44 and 45. We think these two will filter out a large amount of observations:
 
 
-```{r}
+```{r, echo=TRUE}
 counts_44_45 <- hhs_all_complete %>% 
   data.frame() %>% 
   clean_names() %>% 
@@ -473,7 +499,7 @@ This filters out 1000s of observations, which we accept. We want to observe resp
 
 
 Here,  I created our filtered df, where each observation responds to every *agreement* and *engagement* question. These questions exist in rows 24:33, therefore `drop_na` is used for those columns.    
-```{r}
+```{r, echo=TRUE}
 
  hhs_complete_filtered <- hhs_all_complete %>% 
   data.frame() %>% 
@@ -514,7 +540,7 @@ x32_fishery_benefit_equal,
 x51b_fishers_reserves,
 x70_hh_average_income, 
 x7_gender, x7_age, x7_relationship, x7_gender, x7_education, household_size,
-)) %>% 
+x54_food_availability)) %>% 
  # mutate_at(c(24:25), ~replace(., is.na(.), 0)) %>% 
    drop_na(24:34) %>% 
     filter(x53_encourage_regulations != "No regulations")  %>% 
@@ -544,20 +570,61 @@ Now  columns [24:33] within `hhs_complete_filtered` are all of the Engagement an
 
 - *For Q 46-47* we've excluded NAs since they mostly represent "non-fisher households" The difference in n goes from 5640 to ~4500. We want to see how *fishers* comply though. So the smaller N will show us that. 
 
-Writing `hhs_complete_filtered` into a CSV file, so it can be used in subsequent .Rmd files. 
 
 
-```{r}
-write.csv(hhs_complete_filtered, "hhs_filtered.csv", row.names = FALSE)
+*12/27/21*
+
+We're adding 1 question to the Agreement index, either `x30_trust_local_decision` or `30_trust_regional_decision`
+
+I'll run a `corplot` how the two questions compare
+
+```{r, echo=TRUE}
+x30_compared <- 
+  hhs_complete_filtered %>% 
+  select(x30_trust_local_decision, x30_trust_regional_decision) %>% 
+  drop_na()
+
+corrplot(cor(x30_compared))
+
 ```
 
-*"hhs_filtered.csv" combines the `hhs_surveys_all.csv` with `hh_q7.csv`, `hh_q44.csv`, `hh_q45.csv`, and `hh_q48.csv` into one dataset. While joining the datasets mentioned, we remove all duplicate submissions, so that each household surveyed (`submissionid`) has a single row.*
-Then, we filtered this huge dataset to include variables that build our *Engagement* and *Agreement* metrics, and dozens of other variables that may have use in our analysis. This process includes dropping all obsetvations that have NA values within the 11 compliance variables. 
+alright, they're highly correlated, we're going to stick with "local decision-makers"
 
-Building this dataframe (alongisde 1 more, and showing reproduclible data wrangling + amanagerent) are purpose of this .Rmd file, and to do so you will see the use of several other dataframes; these steps helped us confidently build our indices, and pick out other variables. 
+#### Quantitiative values of survey Answers
+
+Let me list out which A and E questions have binary responses, for those that have "neither agree nor disagree," then I'll move from -1 to 1, with a neutral option 0. From here, I change all 10 index-components (thr 10 questions) into numeric variables. 
 
 
-```{r}
+###### Agreement 
+
+I'll start converting the straightforward questions to 1s and 0s. 
+**Because there was so much much dang coding in the global_filtered, I'll make a new df for the numbered version. 
+We'll call it **hhs_filtered_numeric**
+
+
+###### Engagement
+
+NOTE TO DYL, INCLUDE 2-3 WORD IDNICATOR PER QUESTION BELOW
+Quantification list:
+
+- 44: Yes/No 1/-1 (We recoded not sure to 0, see Methods)
+- 45: Yes/No 1/-1 (We recoded 'Not sure to 0, see Methods)
+- 48: Yes/No/Not Sure (1,0,-1) 
+- 53: Never - Very Often  (1-5)
+- 61 (f): Likert Scale (Strongly) Disagree-Agree (1-5) 
+- 61 (h): Likert Scale (Strongly) Agree-Disagree (1-5)
+
+###### Agreement
+
+- 43: Yes/No: (1,0,-1)
+- 46: Agree/Neither/Disagree: (1,0,-1)
+- 52: Yes/Unsure-No management-na/No: (1,0,-1)
+- 61(a): Likert Scale (Strongly) Agree-Disagree 1-5
+- 61(e): Likert Scale (Strongly) Agree-Disagree 1-5 
+
+
+The chunk below uses `mutate()` and `recode_factor` to complete the numeration above. 
+```{r, echo=TRUE}
 hhs_filtered_numeric <- hhs_complete_filtered %>% 
  mutate(x44_meeting_attendance = recode_factor(x44_meeting_attendance, "Yes" = "1", "No"  = "-1", "Not sure" = "0")) %>% 
   mutate(x45_leadership_position = recode_factor(x45_leadership_position, "Yes" = 1, "No"  = -1, "Not sure" = 0, "0" = 0)) %>% 
@@ -733,30 +800,10 @@ Now, I **believe** it's time to scale the data!
 
 Let's just make a quick table with the *counts* of all the survey responses that we have for analysis. 
 
-```{r}
-# hhs_filtered_count <- hhs_filtered_numeric %>% 
-#   count(ma_name) %>% 
-#   arrange(-n) %>% 
-#   #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
-#   adorn_totals("row") %>% 
-#   rename("Managed Access Area" = ma_name) %>% 
-#   rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
-# 
-# 
-# count_table <- knitr::kable(hhs_filtered_count, format = "html", caption = "Engagement and Agreement Summary") %>% 
-#   #column_spec(1, italic = TRUE) %>% 
-#  # row_spec(dim(hhs_filtered_count)[1], bold = TRUE) %>%
-#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
-#   collapse_rows(columns = 1, valign = "middle")
-# 
-# count_table
 
-```
+Counts by *Country*
 
-
-Counts by Reserve is great, but Larissa would like the same table by *Country*
-
-```{r}
+```{r, echo=TRUE}
 
 hhs_count_by_country <- hhs_filtered_numeric %>% 
   count(country) %>% 
@@ -796,7 +843,7 @@ Following this with a check of the "no management" answers, and how they were co
 
 
 With the statistics, we see the new mean, sd, etc. for all the agreement and engagement question. 
-```{r}
+```{r, echo=TRUE}
 
 
 hhs_scaled <- 
@@ -848,7 +895,7 @@ Along with scaling the data onto a Z-Axis, I'm going to simply sum across the ag
 - `agree_mean` is the mean score of *agreement* for each fisher respondent 
 - I add two more variables:  `eng_sum` and `agree_sum` 
 Without scaling, I've summed agreement and engagement across rows, for exploratory visualization
-```{r}
+```{r, echo=TRUE}
 
 
 
@@ -880,7 +927,104 @@ scaled_sum <- hhs_scaled %>%
 **Since I've done a lot of analysis that takes away from the streamlined narrative here, I'm going to `write.csv` for scaled_sum, and add those (like graphs of each individual question) visualizations, etc. into another .Rmd**
 
 
-```{r}
+```{r, echo=TRUE}
+
+write.csv(scaled_sum, "scaled_sum.csv", row.names = FALSE)
+```
+`side_analysis.Rmd` contains the following analyses and visualizations: 
+
+- Bar Graphs for each A & E Question (to see the spread of responses, by question)
+- Cluster analysis for *seperately* Agreement and Engagement
+- UNSCALED K-Means Clustering (Was in use, up until 11/17/21)
+- A large amount of visualizations for the unscaled Cluster analysis above
+
+
+
+```{r, echo=TRUE}
+
+
+hhs_scaled <- 
+  hhs_filtered_numeric %>% 
+  mutate_at(vars(24:33), ~as.numeric(as.character(.))) %>% 
+  
+  mutate(x44_scaled = as.numeric((x44_meeting_attendance - mean(x44_meeting_attendance))/sd(x44_meeting_attendance))) %>% 
+
+  
+  mutate(x45_scaled = (x45_leadership_position - mean(x45_leadership_position))/sd(x45_leadership_position)) %>% 
+  
+  mutate(x48_scaled = (x48_enforcement_participation - mean(x48_enforcement_participation))/sd(x48_enforcement_participation)) %>% 
+  
+  mutate(x53_scaled = (x53_encourage_regulations - mean(x53_encourage_regulations))/sd(x53_encourage_regulations)) %>% 
+  
+  mutate(x61g_scaled = (x61g_fishing_change_behavior - mean(x61g_fishing_change_behavior))/sd(x61g_fishing_change_behavior)) %>% 
+  # mutate(x67_scaled = (x67_reserve_boundry - mean(x67_reserve_boundry))/sd(x67_reserve_boundry)) %>% 
+
+  ##Switch from Engagement to Agreement
+
+ # mutate(x10_scaled = (x10_mpa_important - mean(x10_mpa_important))/ sd(x10_mpa_important)) %>% 
+  ## We removed question 10 from the indez
+  mutate(x43_scaled = (x43_ma_benefits - mean(x43_ma_benefits))/sd(x43_ma_benefits)) %>% 
+  mutate(x46_scaled = (x46_represent_interests - mean(x46_represent_interests))/sd(x46_represent_interests)) %>% 
+#  mutate(x47_scaled = (x47_represent_contributions - mean(x47_represent_contributions))/sd(x47_represent_contributions)) %>% 
+  # 47 was also removed from the index
+  mutate(x52_scaled = (x52_ma_benefit_5yrs - mean(x52_ma_benefit_5yrs))/sd(x52_ma_benefit_5yrs)) %>% 
+  mutate(x61a_scaled = (x61a_current_regulations - mean(x61a_current_regulations))/sd(x61a_current_regulations)) %>% 
+   mutate(x61f_scaled = (x61f_rights_distribution_fair - mean(x61f_rights_distribution_fair))/sd(x61f_rights_distribution_fair)) %>% 
+  mutate(x30a_scaled = (x30_trust_local_decision - mean(x30_trust_local_decision))/sd(x30_trust_local_decision))
+  
+
+
+
+  
+```
+
+I've double-checked the statistics on each of the above variables! Each new column has a mean of nearly 0 (3x10^-16, etc.) This gives me confidence that all the math is correct. 
+
+Since we changed `recode()` to `recode_factor()`, these stats functions would not run. By changing the values to as.numeric, all is well. 
+
+
+###### Index Scores
+
+*Let's start with  `mean()` and `sum()`* 
+
+Along with scaling the data onto a Z-Axis, I'm going to simply sum across the agreement and engagement columns too, to see what we get. 
+- `eng_mean` is the mean index score of *engagement,* with 1 score for each fisher respondent
+- `agree_mean` is the mean score of *agreement* for each fisher respondent 
+- I add two more variables:  `eng_sum` and `agree_sum` 
+Without scaling, I've summed agreement and engagement across rows, for exploratory visualization
+```{r, echo=TRUE}
+
+
+
+
+scaled_sum <- hhs_scaled %>% 
+ rowwise() %>% 
+  mutate(eng_sum = sum(x44_scaled, x45_scaled, x48_scaled, x53_scaled,  x61g_scaled))  %>% 
+  mutate(agree_sum = sum (x43_scaled, x46_scaled, x52_scaled, x61a_scaled, x61f_scaled, x30a_scaled))  %>% 
+  mutate(eng_mean = mean(c(x44_scaled, x45_scaled, x48_scaled,  x53_scaled,  x61g_scaled))) %>% 
+  mutate(agree_mean = mean(c(x43_scaled, x46_scaled, x52_scaled,  x61a_scaled,  x61f_scaled, x30a_scaled))) %>% 
+  rowwise() %>%
+  mutate(raw_agree_mean = mean(c(x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair, x30_trust_local_decision))) %>% 
+   mutate(raw_eng_mean = mean(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior)))
+
+
+
+
+    ## Below I add two more variables:  "raw_eng_sum" and "raw_agree_sum." Without scaling, I've summed agreement and engagement across rows, for exploratory visualization
+ # mutate(raw_eng_sum = sum(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior))) %>% 
+#  mutate(raw_agree_sum = sum(c(x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair, x64_wrong_fishing_reserve)))
+
+```
+
+
+
+`scaled_sum` is the main df used for A/E visualization and analysis. It includes the `agree_mean` and `eng_mean` index variables, as well as dozens of other survey variables that we look at in relation to our indices. 
+
+
+**Since I've done a lot of analysis that takes away from the streamlined narrative here, I'm going to `write.csv` for scaled_sum, and add those (like graphs of each individual question) visualizations, etc. into another .Rmd**
+
+
+```{r, echo=TRUE}
 
 write.csv(scaled_sum, "scaled_sum.csv", row.names = FALSE)
 ```
