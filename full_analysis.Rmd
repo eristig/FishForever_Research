@@ -932,13 +932,10 @@ scaled_sum <- hhs_scaled %>%
 
 
 
-
     ## Below I add two more variables:  "raw_eng_sum" and "raw_agree_sum." Without scaling, I've summed agreement and engagement across rows, for exploratory visualization
  # mutate(raw_eng_sum = sum(c(x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior))) %>% 
 #  mutate(raw_agree_sum = sum(c(x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair, x64_wrong_fishing_reserve)))
-
 ```
-
 
 
 `scaled_sum` is the main df used for A/E visualization and analysis. It includes the `agree_mean` and `eng_mean` index variables, as well as dozens of other survey variables that we look at in relation to our indices. 
@@ -948,7 +945,6 @@ scaled_sum <- hhs_scaled %>%
 
 
 ```{r}
-
 write.csv(scaled_sum, "scaled_sum.csv", row.names = FALSE)
 ```
 `side_analysis.Rmd` contains the following analyses and visualizations: 
@@ -1173,6 +1169,7 @@ pct. 75 = 1
 
 Within Agreement, the average response is positive, a majority of folks respond 1 sd above Neutral. With Engagement, we see a a mean of 0.6, which is right at "neutral" and a more normal distribtuion from there. 
 
+Lines 1172-1219 are filed in... `figures_for_methods_paper.Rmd`
 ```{r}
 
 mapping_63 <- scaled_sum %>% 
@@ -1281,7 +1278,7 @@ The very-low agreement observations are here, but many high-engagement fishers a
 Do they just think that practice is OK? Or might they be engaged to try and curb those efforts? Engaged folks maybe see the reality a bit better than those who are "hopeful" about conservation? fascinating. 
 
 
-
+Lines 1281-1315, filed away in `mapping_indices_(part_2).Rmd
 
 ##### Measuring Brazil
 *After a sensitivity analysis, we now include 756 Brazilian observations*
@@ -1325,13 +1322,11 @@ Making some tables and graphs for Claudia + Rare:
 
 hhs_scaled_character <- hhs_scaled %>% 
   as.character(c(24:34))
-  
 
 engage_scaled_sum <- hhs_scaled %>%
   select(24:28)
   
 st(engage_scaled_sum)
-
 
 agree_scaled_sum <- hhs_scaled %>% 
   select(29:33)
@@ -2451,10 +2446,10 @@ job_security_counts <- food_security %>%
   group_by(x23_job_secure) %>% 
   count(cluster_no) 
 ```
-Cluster 1: 55% job secure
-Cluster 2: 46% job secure
-Cluster 3: 72% job secure
-Cluster 5: 65% job secure
+Wavering: 55% job secure
+Resistant: 46% job secure
+Committed: 71% job Secure
+Supportive: 65% job secure
 
 
 Let's graph this
@@ -2479,20 +2474,20 @@ Question 29 "To cover family needs
 your household income
 is…"  [Sufficient, Tight, Insufficient]
 ```{r} 
-ggplot(food_security,
-       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
-  geom_point(size = 0.7) +
-  labs( x = "Agreement (Scaled across 5 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "Ability to cover family costs", 
-      color = "Cluster", 
-      caption = "Hypothesis: Those with sufficient funds engage more, agree similarly") +
-  scale_x_continuous(limits = c(-3, 2),
-                     breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2)) +
-  guides(colour = guide_legend(override.aes = list(size=7))) +
-  facet_wrap(~x29_family_income)
+# ggplot(food_security,
+#        aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+#   geom_point(size = 0.7) +
+#   labs( x = "Agreement (Scaled across 5 Questions)",
+#       y = "Engagement (Scaled across 5 Questions)",
+#       title = "Ability to cover family costs", 
+#       color = "Cluster", 
+#       caption = "Hypothesis: Those with sufficient funds engage more, agree similarly") +
+#   scale_x_continuous(limits = c(-3, 2),
+#                      breaks = c(-2, -1, 0, 1, 2)) +
+#    scale_y_continuous(limits = c(-1.5, 2),
+#                      breaks = c( -1, 0, 1, 2)) +
+#   guides(colour = guide_legend(override.aes = list(size=7))) +
+#   facet_wrap(~x29_family_income)
 
 ##looking at percentages now, to see another bar plot. 
 
@@ -2570,15 +2565,12 @@ ggplot(x59_counts,
       caption = "Are you confident that you will be able to procure enough food for you and your family for the next 12 months?") +
   # geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
   theme_bw()
-  
-
-
-
 ```
 
 
 
 Since need (so far) isn't correlating much with any particular level of compliance, let's see how people who are dependent on seafood comply: 
+Note: NOT in use for any active analysis
 ```{r} 
 
 seafood_clean <- food_security %>% 
@@ -3209,7 +3201,7 @@ ggplot(x18_cluster_counts,
 ```
 
 ##### Household Demographics (Question 7)
-
+Filed in... *Nowhere. Exploratory section fo original analysis.*
 
 I'll first make a df that includes all of subquestions of Q7. 
 ```{r} 
@@ -3283,7 +3275,7 @@ Cluster 3 has a small proportion of older fishers, and a huge contingent of resp
 
 
 Let's do 1 more subsection of Q7. Binned HHS size? Or Relationship? I'll start with relationship. 
-
+Filed in... *Nowhere. Exploratory section fo original analysis.*
 ```{r} 
 relationship_counts <- question_7_analysis %>% 
   drop_na(x7_relationship) %>% 
@@ -3314,6 +3306,8 @@ This is challenging because we're not likely seeing responses from the fisher of
 
 Let's make a CSV of `scaled_km_df` so we can have a single .Rmd file for the Paper Figures and their asssociated tests. 
 
+#### Chi-Squared Testing
+Filed in... `figures_for_methods_paper.Rmd`
 
 ###### First Figure: Enforcement Responsibility 
 

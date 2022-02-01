@@ -465,4 +465,87 @@ Therefore, the means of exactly 1 and 0 are correct, because each clsuters has u
 
 
 
+##### Confirmatory Factor Analysis
 
+We were curious if our Clusters could be confirmed by a CFA. Mostly exploratory. 
+
+```{r}
+raw_index_leveling <- scaled_sum %>%
+  select(country, x43_ma_benefits, x46_represent_interests, x52_ma_benefit_5yrs, x61a_current_regulations, x61f_rights_distribution_fair,x44_meeting_attendance, x45_leadership_position, x48_enforcement_participation, x53_encourage_regulations, x61g_fishing_change_behavior) %>%
+mutate(x61f_rights_distribution_fair= (x61f_rights_distribution_fair-3)/2) %>% 
+  mutate(x61a_current_regulations= (x61a_current_regulations-3)/2) %>% 
+  mutate(x53_encourage_regulations= x53_encourage_regulations/2) %>% 
+  mutate(x61g_fishing_change_behavior = (x61g_fishing_change_behavior-3)/2) %>% 
+  mutate(eng_mean = mean(x44_meeting_attendance + x45_leadership_position + x48_enforcement_participation + x53_encourage_regulations + x61g_fishing_change_behavior)) %>% 
+mutate(agree_mean = mean(x43_ma_benefits + x46_represent_interests + x52_ma_benefit_5yrs + x61a_current_regulations + x61f_rights_distribution_fair))
+
+
+  
+```
+
+**NOTE: `raw_index_leveling` is a bit funky. We leveled each 1-5 response into [-1, -0.5, 0, 0.5, 1]**
+
+We want to see a non-relative index measure, which leaves us with much less variation in possible outcomes (potential locations on an X-Y map.)
+This tricky step happens because we don't want a step from "4" to "5" in likert to be the same as a step from "Neutral" to "Yes" on a binary question. But we sort of have to. 
+
+
+Let's visualize this version
+
+
+```{r}
+ggplot(data = raw_index_leveling,
+                      aes(x = agree_mean, y = eng_mean)) +
+   # geom_point(color = "darkblue", size = 0.7, alpha = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+ geom_bin2d(bins = 50) +
+   scale_color_viridis(discrete = TRUE, option = "D") +
+   # scale_x_continuous(limits = c(-2.5, 1.7),
+   #                   breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme_bw()
+```
+
+
+Prepping only the agreement and engagement questions for the CFA
+
+```{r}
+agree_engage_leveled <- raw_index_leveling %>% 
+  select(2:11) 
+
+raw_index_leveling
+```
+
+######  Confirmatory Factor Analysis Model
+using `agree_engage_only` df
+```{r}
+
+agree_engage_leveled
+
+model1 <-  'f1  =~  x44_meeting_attendance +
+                    x48_enforcement_participation +
+                      x53_encourage_regulations + 
+                    x61g_fishing_change_behavior +
+             x43_ma_benefits + 
+                    x52_ma_benefit_5yrs +
+                    x61a_current_regulations +
+                    x46_represent_interests +
+              x61f_rights_distribution_fair'
+
+
+
+fit <- cfa(model1, data = agree_engage_leveled, std.lv=TRUE)
+summary(fit, standardized = TRUE, fit.measures = TRUE)
+
+
+lavaan::modindices(fit, minimum.value = 10, sort = TRUE)
+```
+Taking notes on CFA 
+- Std. all = "beta values" 
+- We have pretty low 
+
+Return to this link when I want to plot the fit model 
+[https://www.youtube.com/watch?v=aQiFJcEWBLo]

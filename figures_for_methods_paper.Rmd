@@ -200,6 +200,421 @@ Both C1 and C4 (average fishers) have higher values in question x61g (willingnes
 
 ```{r}
 
+no_na_19 <- scaled_km_df %>% 
+    drop_na(x19_current_fish_catch) %>% 
+ mutate(x19_current_fish_catch = recode_factor(x19_current_fish_catch, 
+    "Declined a lot" = "1. Declined a lot",
+          "Declined slightly" = "2. Declined slightly",
+           "Stayed the same" = "3. Stayed the same",
+          "Improved slightly" = "4. Improved slightly",
+          "Improved heavily" = "5. Improved heavily")) 
+  
+
+
+       
+         
+         
+mean_19_df <- no_na_19 %>% 
+        group_by(x19_current_fish_catch) %>% 
+        summarise(eng_mean = mean(eng_mean),
+                  agree_mean  = mean(agree_mean)) 
+         
 ```
 
+**Another Version of Perceived Catch**
+
+```{r}
+ggplot(no_na_19, 
+       aes(x = agree_mean, y = eng_mean, color = x19_current_fish_catch)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Perceived Change in Catch", 
+      color = "Change in Fish Catch (perceived)", 
+      caption = "Hypothesis: fish decline = Less Agreeing") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) 
+```
+
+
+```{r}
+
+x19_counts <- no_na_19 %>% 
+  count(x19_current_fish_catch)
+
+x19_cluster_counts <- no_na_19 %>% 
+  group_by(cluster_no) %>% 
+  count(x19_current_fish_catch)
+
+
+ggplot(x19_cluster_counts,
+       aes(x = x19_current_fish_catch, y = n, fill = cluster_no,
+           )) +
+  geom_bar(position="fill", stat="identity") +
+  labs( x = "Perception of Fish Stock (over last 2 years)",
+      y = "Percentage",
+      fill = "Cluster") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+reversed_x19_counts <- 
+  no_na_19 %>% 
+  group_by(x19_current_fish_catch) %>% 
+  count(cluster_no)
+
+ggplot(reversed_x19_counts,
+       aes(x = cluster_no, y = n, fill = x19_current_fish_catch)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.7) +
+  labs( x = "Clusters",
+      y = "Percentage of Cluster",
+      title = "Perceived Catch and Clusters", 
+      fill = "Perceived Change in Fish Catch \n (compared with 2 years prior)") +
+  scale_fill_viridis(discrete = T) +
+  theme_bw()
+
+```
+Here's a breakdown of the ecology question:
+
+
+
+
+Cluster 1 saw mostly declines (466/677)
+Cluster 2 has the most who saw slight improvements 
+Cluster 3
+
+
+I just want to check the counts of x19 by country
+```{r} 
+x19_by_country <- no_na_19 %>% 
+  group_by(country) %>% 
+  count(x19_current_fish_catch)
+
+ggplot(x19_by_country) +
+  geom_bar( aes(x = country, y=n, fill = x19_current_fish_catch), stat="identity", alpha=0.8) +
+  theme_bw() +
+  labs(fill = "Perceived Fish Catch")
+
+x19_sans_phl <- no_na_19 %>% 
+  filter(country != "PHL") %>% 
+    group_by(country) %>% 
+  count(x19_current_fish_catch)
+
+ggplot(x19_sans_phl) +
+  geom_bar( aes(x = country, y=n, fill = x19_current_fish_catch), stat="identity", alpha=0.8) +
+  theme_bw() +
+  labs(fill = "Perceived Fish Catch")
+```
+
+
+##### 5. Fishing Effort in "Low Season"
+
+First, I clean the dataframe
+```{r}
+fishing_effort_17 <- scaled_km_df %>% 
+  filter(x17_fishing_low_profit %in% c("Once or never",
+                                         "A few times",
+                                         "A few times per month",
+                                        "1-2 per week",
+                                         "More than 1-2 times per week",
+                                       na.rm = FALSE)) %>% 
+  drop_na(x17_fishing_low_profit) %>% 
+mutate(x17_fishing_low_profit = recode_factor(x17_fishing_low_profit, "Once or never" = "Rarely")) %>% 
+  mutate(x17_fishing_low_profit = recode_factor(x17_fishing_low_profit, "A few times" = "Rarely"))
+  
+
+x17_counts <- fishing_effort_17 %>% 
+  group_by(x17_fishing_low_profit) %>% 
+  count()
+
+x17_cluster_counts <- fishing_effort_17 %>% 
+  group_by(cluster_no) %>% 
+  count(x17_fishing_low_profit)
+```
+
+
+Then I visualize
+```{r}
+ggplot(data = fishing_effort_17,  aes(x = agree_mean, y = eng_mean)) +
+   geom_point(aes(color = x17_fishing_low_profit), size = 0.7, alpha = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Engagement and Agreement Index Mapping") +
+#  scale_color_viridis(discrete = TRUE, option = "D") +
+    # scale_x_continuous(limits = c(-3, 1.7),
+    #                   breaks = c(-2, -1, 0, 1, 1.5)) +
+   # scale_y_continuous(limits = c(-1.5, 1.5),
+   #                   breaks = c( -1, 0, 1, 1.5)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme_bw()
+
+
+ggplot(x17_cluster_counts,
+       aes(x = cluster_no, y = n, fill = x17_fishing_low_profit)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Fishing Effort in Offseason", 
+      fill = "Fishing Effort (Per Week)", 
+      caption = "Hypothesis: resistant fishers fish more") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
+  theme_bw()
+
+
+```
+
+
+- Resistant fishers who fish 1+ times per week: 236/526 = 45%
+- Wavering fishers who fisher 1+ times per week: 257/998  = 26%
+- Supportive fishers who fisher 1+ times per week: 370/1279 = 29%
+- Committed fishers who fisher 1+ times per week: 236/812 = 29%
+
+Second figure will be another stacked barplot
+This is rad! I'm going to code away at x18, and then do a little more interpreting. 
+
+##### 6. Fishing Effort in "High Season"
+
+Dataframe cleaning
+```{r} 
+x18_fishing_effort <- scaled_km_df %>% 
+  filter(x18_fishing_high_profit %in% c(
+    "Once or never",
+"A few times",
+"A few times per month",
+"1-2 per week", 
+"More than 1-2 times per week")) %>% 
+mutate(x18_fishing_high_profit = recode_factor(x18_fishing_high_profit, "Once or never" = "Rarely")) %>% 
+  mutate(x18_fishing_high_profit = recode_factor(x18_fishing_high_profit, "A few times" = "Rarely")) %>% 
+  drop_na(x18_fishing_high_profit)
+
+# basic counts
+
+x18_counts <- x18_fishing_effort %>% 
+  count(x18_fishing_high_profit)
+
+x18_cluster_counts <- x18_fishing_effort %>% 
+  group_by(cluster_no) %>% 
+  count(x18_fishing_high_profit)
+```
+
+Let's do the same visualization for 18, as I did for 17. 
+
+Visualziation
+```{r}
+ggplot(x18_cluster_counts,
+       aes(x = cluster_no, y = n, fill = x18_fishing_high_profit)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Fishing in High Season", 
+      fill = "Frequency of Fishing", 
+      caption = "Hypothesis: Angry fishers fish alot") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
+  theme_bw()
+
+```
+
+
+- Resistant fishers who fish 1+ times per week: 70%
+- Wavering fishers who fisher 1+ times per week: 84%
+- Supportive fishers who fisher 1+ times per week: 83%
+- Committed fishers who fisher 1+ times per week: 73%
+
+supportive : 719, wavering 563, Committed 414, resistant 227
+
+
+##### 7. Food Security 
+
+- Question #23: "Do you believe that the job of a fisher is secure in the future?"  
+- Question #29: "To cover family needs your household income is…"
+- Question #54: "How do you rate the last year in terms of food availability?"
+- Question #59: "Are you confident that you will be able to procure enough food for you and your family for the next 12 months?"
+- Question #60: In the last 12 months, how often did your household eat fish?
+
+
+Starting with 55 and 56
+
+```{r}
+food_security <- scaled_km_df %>% 
+  select(country, cluster_no, x23_job_secure, x26_fishing_income_save, x28_buyer_loans, x29_family_income, x55_worry_food, x59_food_procurement, x60_hh_fish_consumption, eng_mean, agree_mean, x54_food_availability) %>% 
+  drop_na()
+```
+
+Ability to cover family costs
+```{r}
+income_counts <- food_security %>% 
+  group_by(cluster_no) %>% 
+  count(x29_family_income)
+
+
+ggplot(income_counts,
+       aes(x = cluster_no, y = n, fill = x29_family_income)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Ability to cover family costs", 
+      fill = "Household funds are..", 
+      caption = "Hypothesis: insufficient funds = less engaged") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
+  theme_bw()
+```
+
+**Below, Food Security is asked in terms of the quality of food availability the past year, and the confidence for the upcoming year.**
+
+
+Measuring Question 54, "How do you rate the last year in terms of food availability? "
+```{r} 
+x54_cluster_counts <- food_security %>% 
+  group_by(cluster_no) %>% 
+  count(x54_food_availability) %>% 
+  drop_na()
+
+ggplot(x54_cluster_counts,
+       aes(x = cluster_no, y = n, fill = x54_food_availability)) +
+  geom_bar(stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Food Availability (Past Year)", 
+      fill = "'Rating' Food availability",
+      caption = "How do you rate the last year in terms of food availability?") 
+
+
+ggplot(x54_cluster_counts,
+       aes(x = cluster_no, y = n, fill = x54_food_availability)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.7) +
+  labs( x = "Fisher Type",
+      y = "Percentage of fishers",
+      title = "Food Availability (past Year)", 
+      fill = "Level of Food") +
+   scale_fill_viridis(discrete = T)
+
+```
+
+
+ "Are you confident that you will be able to procure enough food for you and your family for the next 12 months?
+
+```{r} 
+x59_counts <- food_security %>% 
+  group_by(cluster_no) %>% 
+  count(x59_food_procurement) %>% 
+  drop_na() %>% 
+  mutate(x59_food_procurement = recode_factor(x59_food_procurement,
+                                              "Confident not" = "Not confident",
+                                              "Very confident not" = "Very not confident"))
+
+ggplot(x59_counts,
+       aes(x = cluster_no, y = n, fill = x59_food_procurement)) +
+  geom_bar(stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Total # of Fishers",
+      title = "Food Security Confidence (Upcoming Year)", 
+      fill = "'Rating' Food availability",
+      caption = "Are you confident that you will be able to procure enough food for you and your family for the next 12 months?") +
+  # geom_text(aes(label = n),position = position_dodge(0.9), vjust = 2, size = 2, color = "gray1")+
+  theme_bw()
+```
+
+##### Food Security ("worrying about food")
+
+```{r}
+x55_cluster_counts <- food_security %>% 
+  group_by(x55_worry_food) %>% 
+  count(cluster_no)
+
+ggplot(x55_cluster_counts,
+       aes(x = cluster_no, y = n, fill = x55_worry_food)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.7) +
+  labs( x = "Fisher Type",
+      y = "Percentage of fishers",
+      title = "Financial Insecurity", 
+      color = "Cluster", 
+      caption = "Worry about Food Security (last 12 months") +
+   scale_fill_viridis(discrete = T)
+
+```
+
+
+
+### Chi-Squared Means Testing 
+
+**For the Figures that we include in the Manuscript, we'll need to test the significance of the different groups. We have very large Ns and feel confident in the groupings for that reason. 
+
+
+##### 2a. Enforcement Responsibility 
+
+*Chi-Squared Test*
+Null: There is no significant difference between the Cluster makeup of each bucket of enforcement responsibility
+Alternative: there is a menaingful difference between the compliance behaviors of each enforcement responsoibility
+```{r} 
+enforcement_counts_table <- enforcement_counts %>% 
+   pivot_wider(names_from = x49_enforcement_responsible, values_from = n) %>% 
+  rename(Cluster = cluster_no)
+
+enforcement_counts_prop <- enforcement_counts_table %>% 
+  janitor::adorn_percentages(denominator = "col") %>% 
+  adorn_pct_formatting(digits = 0) %>% 
+  adorn_ns(position = "front")
+
+
+enforcement_counts_prop
+```
+Nicer version of this table
+
+```{r} 
+kable(enforcement_counts_prop) %>% 
+  kable_styling()
+```
+
+Now let's run the Chi-Squared test. 
+```{r}
+enforcement_pre_chi <- enforcement_counts_table %>% 
+  select(-Cluster)
+
+enforcement_chi <- chisq.test(enforcement_pre_chi)
+
+
+enforcement_chi
+```
+
+Clustered Enforcement has a p-value < 2.2e-16
+
+##### 2b. Perceived Catch 
+```{r}
+
+perceived_catch_table <- x19_cluster_counts %>% 
+  pivot_wider(values_from =  n, names_from = x19_current_fish_catch) %>% 
+  rename(Cluster = cluster_no) 
+
+preceived_catch_props <- perceived_catch_table %>% 
+  janitor::adorn_percentages(denominator = "col") %>% 
+  adorn_pct_formatting(digits = 0) %>% 
+  adorn_ns(position = "front")
+
+kable(preceived_catch_props) %>% 
+  kable_styling()
+
+
+```
+
+Now let's do the Chi-squared for Perceived Catch and Clusters 
+
+```{r}
+
+pre_chi_perceived_catch <- perceived_catch_table %>% 
+  ungroup() %>%
+  select(2:6)
+
+
+chi_perceived_catch <- chisq.test(pre_chi_perceived_catch)
+
+
+chi_perceived_catch
+```
+Clusters and Perceived catch have a  p-value < 2.2e-16
+
+
+##### 2c.  Fishing Effort in Offseason 
 
