@@ -493,6 +493,7 @@ This is the largest spread of any cluster. We have some fully-agreeing fishers, 
 Center = (0.002805289, -0.1748106) (Agreement, Engagement)
 N = 936
 
+
 *Cluster 4* 
 Its center is very close to Cluster 3, but we can see clear differences when we look at the spread. These folks do NOT engage. While there as unengaged as the Resistant fishers, but most actually agree quite a lot. This includes some with A = 1, the max. 
 Center = (0.052635489, -0.4098127) (Agreement, Engagement)
@@ -505,3 +506,7 @@ This is the classically known group of unengaged, disagreeing fishers. Many of t
 Center = (-0.837729407, -0.4569608) (Agreement, Engagement)
 N = 620, smallest cluster. 
 
+
+### More visualizations with Clusters 
+
+I've made heaps of visualizations to understand where we see variation between Clusters and where we do not (both can be insightful!)

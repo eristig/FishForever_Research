@@ -373,7 +373,7 @@ x30_trust_local_decision)
 We retained `x30_trust_local_decision` but excluded `x67_reserve_boundry` which only 11 responses. Now our fuller indices include 819 observations from Brazil. 
 
 
-
+####
 
 
 
@@ -464,6 +464,36 @@ In total, 6500 said no, 6200 said yes.
 Therefore, the means of exactly 1 and 0 are correct, because each clsuters has unanimous responses. 
 
 
+##### Correlation plots with `corrplot()`
+
+Another way that we check the validity of our indcides is with `corrplot`, we want to udnerstand how much differen components (questions) within each index correlate with one another. If 2 questions are nearly 100% correlated, we may want to remove one, as to not overweight a certain compliance idea. Likewise, if two questions had negative correlation, we would want to understand why.  
+
+```{r}
+
+ engagement_only <- scaled_sum %>% 
+  select(24:28)
+
+corrplot(cor(engagement_only), main = "Engagement Question Correlations")
+
+```
+When running a correlation of all the *Engagement* questions, we see very little correlation across the different questions. We see correlations around 0 and 0.3, with no negative correlations. We find the *largest* correlation between questions 45 and 48 (0.5). 
+
+
+Let's do the same with agreement, and all compliance questions together. 
+
+
+```{r}
+
+corrplot(cor(agree_scaled_sum), main = "Agreement Question Correlations")
+```
+
+Here we see really similar results to the Engagement corrplot. There are no dark blue or large circles. Again, we see no negative correlation, a lot of results between 0 and 0.2. 61(f) (fairness of distribution) and 61(a) (benefit of current regulations) have a slightly lager correlation, at 0.5 
+
+
+Let's look at agreement AND engagement. This will look messy at first. 
+
+
+
 
 ##### Confirmatory Factor Analysis
 
@@ -482,6 +512,64 @@ mutate(agree_mean = mean(x43_ma_benefits + x46_represent_interests + x52_ma_bene
 
   
 ```
+
+
+### Physical Cluster Analysis (How me create the scaled_km_df)
+
+#### Cluster Analysis witk `NbClust` and K-means Clustering
+
+After some exploratory work, we understood that a distance-based clustering method first. If possible we want to see common combinations of answers. 
+
+The following doesn't show up in cluster analysis, but I'd be interested to see...
+
+
+Basically, it's going to run 30 different ways of evaluating how many clusters it *thinks* exist, then tell you the breakdown of what they decide (e.g. "8 algorithms think that there should be 4 clusters").
+
+`NbClust::NbClust()`
+
+First I create a df with *only* the 10 columns of A/E questions, since this is all that I want to include in the `NbClust` K-means analysis. 
+```{r}
+agree_engage_only_scaled <- scaled_sum %>% 
+  select(24:34) %>% 
+  scale()
+
+```
+
+
+
+###### HERE is the  scaled, cluster analysis. 
+```{r}
+# number_est <- NbClust(agree_engage_only_scaled[], min.nc = 2, max.nc = 5, method = "kmeans")
+
+agree_engage_only <- scaled_sum %>% 
+  select()
+
+set.seed(8)
+
+ scaled_km <- kmeans(agree_engage_only_scaled, 4)
+
+
+## The 4 means the amount of clusters we're looking at
+
+
+  scaled_km
+  
+
+```
+Below we can look at the "centers," although they are scaled numbers, I'll remake a table with the actual values 
+
+```{r}
+  cl_table_df <- data.frame(scaled_km$size,scaled_km$centers, scaled_km$cluster)
+scaled_km_df_draft <- data.frame(scaled_sum, cluster_no = factor(scaled_km$cluster)) 
+```
+
+
+It's time to decide if there are 4 or 3 Clusters. 
+When we pick 4, we see 2 overlapping clusters in the lower right. One looks to be a bit more agreeing, and includes the folks who are fully agreeing. 
+
+
+
+
 
 **NOTE: `raw_index_leveling` is a bit funky. We leveled each 1-5 response into [-1, -0.5, 0, 0.5, 1]**
 
@@ -549,3 +637,611 @@ Taking notes on CFA
 
 Return to this link when I want to plot the fit model 
 [https://www.youtube.com/watch?v=aQiFJcEWBLo]
+
+
+The K-means clustering process is done, now I'll make some tables and a visualization of the A/E map, with Clusters as colors. This will begin to demonstrate how the fisher responses separate into different "types."
+
+
+```{r}
+ scaled_km_df <- data.frame(scaled_sum, cluster_no = factor(scaled_km$cluster)) %>% 
+  mutate(cluster_no = recode_factor(cluster_no,
+                                    "3" = "Committed", 
+                                    "1" = "Wavering",
+                                    "4" = "Supportive",
+                                    "2" = "Resistant"))
+
+
+cluster_summary_df <- scaled_km_df %>% 
+  group_by(cluster_no) %>% 
+  summarise(eng_mean = mean(eng_mean),
+            agree_mean  = mean(agree_mean),
+            x44_mean = mean(x44_meeting_attendance),
+            x45_mean = mean(x45_leadership_position),
+            x48_mean = mean(x48_enforcement_participation),
+            x53_mean = mean(x53_encourage_regulations),
+            x61g_mean = mean(x61g_fishing_change_behavior), 
+            x43_mean =  mean(x43_ma_benefits),
+            x46_mean = mean(x46_represent_interests),
+           x52_mean = mean(x52_ma_benefit_5yrs),
+           x61a_mean = mean(x61a_current_regulations),
+           x61f_mean = mean(x61f_rights_distribution_fair),
+           x30a_mean = mean(x30_trust_local_decision),
+           x44_median = median(x44_meeting_attendance),
+            x45_median = median(x45_leadership_position),
+            x48_median = median(x48_enforcement_participation),
+            x53_median = median(x53_encourage_regulations),
+            x61g_median = median(x61g_fishing_change_behavior), 
+            x43_median =  median(x43_ma_benefits),
+            x46_median = median(x46_represent_interests),
+           x52_median = median(x52_ma_benefit_5yrs),
+           x61a_median = median(x61a_current_regulations),
+           x61f_median = median(x61f_rights_distribution_fair),
+            x30a_median = median(x30_trust_local_decision)) %>% 
+  mutate(across(where(is.numeric), ~ round(., 2)))
+## Here, the last line of code rounds to the second decimal 
+
+cluster_medians <- cluster_summary_df %>% 
+  select(1, 14:23) 
+
+cl_mean_graphable_df <- cluster_summary_df %>% 
+  select(eng_mean, agree_mean, cluster_no)
+
+
+
+scaled_cluster_counts <- scaled_km_df %>% 
+  count(cluster_no)
+
+
+ggplot() +
+  geom_point(data = scaled_km_df,
+       aes(x = agree_mean, y = eng_mean,
+           color = cluster_no),
+           size = 0.7, alpha = 0.7) +
+   geom_point(data = cl_mean_graphable_df,
+             aes(x = agree_mean, y = eng_mean,
+          color = cluster_no),
+           size = 6, shape = "triangle", show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mapping Clusters",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+```
+
+
+Here is the CSV of our complete dataset, including Clusters, renamed with their titles.
+```{r}
+write.csv(scaled_km_df, "scaled_km_df.csv")
+```
+
+
+#### Cluster-Specific Maps, including densities, country-colored, and stats
+
+
+*df for each Cluster*
+```{r, include=FALSE}
+
+cluster_1_df <- scaled_km_df %>% 
+  filter(cluster_no == "1")
+
+mean(cluster_1_df$eng_mean)
+mean(cluster_1_df$agree_mean)
+median(cluster_1_df$eng_mean)
+median(cluster_1_df$agree_mean)
+
+cluster_2_df <- scaled_km_df %>% 
+  filter(cluster_no == "2")
+
+mean(cluster_2_df$eng_mean)
+mean(cluster_2_df$agree_mean)
+median(cluster_2_df$eng_mean)
+median(cluster_2_df$agree_mean)
+
+cluster_3_df <- scaled_km_df %>% 
+  filter(cluster_no == "3")
+
+c_1_e_m <- mean(cluster_3_df$eng_mean)
+mean(cluster_3_df$agree_mean)
+median(cluster_3_df$eng_mean)
+median(cluster_3_df$agree_mean)
+
+cluster_4_df <- scaled_km_df %>% 
+  filter(cluster_no == "4")
+
+mean(cluster_4_df$eng_mean)
+mean(cluster_4_df$agree_mean)
+
+median(cluster_4_df$eng_mean)
+median(cluster_4_df$agree_mean)
+
+cluster_5_df <- scaled_km_df %>% 
+  filter(cluster_no == "5")
+
+mean(cluster_5_df$eng_mean)
+mean(cluster_5_df$agree_mean)
+
+median(cluster_5_df$eng_mean)
+median(cluster_5_df$agree_mean)
+```
+
+
+
+##### Cluster-specific maps
+
+Cluster 1
+```{r}
+
+
+c_1_mean <- cluster_1_df %>% 
+  summarise(eng_mean = mean(eng_mean),
+                  agree_mean  = mean(agree_mean))
+
+ggplot() +
+  geom_point(data = cluster_1_df,
+       aes(x = agree_mean, y = eng_mean,
+           color = country),
+           size = 1) +
+  geom_point(data = c_1_mean,
+             aes(x = agree_mean, y = eng_mean), 
+           size = 6, shape = "triangle", alpha = 0.7, show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Cluster 1", 
+      color = "Country") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+
+
+ ggplot(data = cluster_1_df,
+       aes(x = agree_mean, y = eng_mean)) +
+  geom_bin2d(bins = 20) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw() +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Density of Cluster 1",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, -0.5, 0, 0.5, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, -0.5, 0, 0.5, 1, 2))
+
+
+
+
+
+cluster_1_country_counts <- cluster_1_df %>% 
+  count(country)
+
+```
+*Figure 7a: Cluster 1 centers at (-0.13,-0.23) and accounts for average fishers who don't see benefits from Managed-Access. They respond nuetrally or in disagreement to question 43, and therefore have an agreement ceiling of 1.8*
+
+
+*7b: The density plot shows us that the several hundred observations lie near (0, -0.5) (of 1154 total.) These fishers have are generally disengaged and have average agreement. The exception is their view of MA benefits*
+
+
+Notes: 
+Agreement ranges -1.2 to 0.8 (ceiling) and engagement ranges -1.4 to 0.9, with a soft ceiling at 0.5; only a handful of observations are included above 0.5 on the Y-axis. 
+
+
+*Country Note*
+163 from Brazil seems high.
+23 from Honduras seems low. 
+873 from PHL
+
+
+Cluster 2 
+```{r}
+
+c_2_mean <- cluster_2_df %>% 
+  summarise(eng_mean = mean(eng_mean),
+                  agree_mean  = mean(agree_mean))
+
+c2_country_counts <- cluster_2_df %>% 
+  count(country)
+
+ggplot() +
+  geom_point(data = cluster_2_df,
+       aes(x = agree_mean, y = eng_mean,
+           color = country),
+           size = 1) +
+  geom_point(data = c_2_mean,
+             aes(x = agree_mean, y = eng_mean), 
+           size = 6, shape = "triangle", alpha = 0.7, show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Cluster 2", 
+      color = "Country") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+
+ggplot(data = cluster_2_df,
+       aes(x = agree_mean, y = eng_mean)) +
+  geom_bin2d(bins = 20) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw() +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Density of Cluster 2",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2))
+```
+*Figure 8a: Cluster 2 are the resistant fishers. A handful of them are quite engaged, but cannot fit in another cluster, due simply to their disagreement below -1. The cluster has a mean of (-0.87, -0.42.) It also has the largest range of any cluster. Agreement ranges between -2.76 and 0.1. Meanwhile, engagement ranges from -1.55 to 1.4. N = 741*.
+
+*8b: This is a smaller cluster, with a hotspot at (-1, -0.5) and just below (on the Y-axis.) * 
+
+The Neutral fisher is in this cluster, interestingly. 
+
+Country Notes
+- Many of the super-unengaged  (bottom of graph)fishers come from Brazil. 
+It's possible that there are less meetings to go to; 234 total in the cluster
+- Many super-disagreeing fishers come from Honduras, 135 total
+- 224 from Philippines, which is only 8% of the 2559 total. 
+
+40% of Honduras and Brazil are in this resistant cluster
+
+- BRA 234 of 573 (41%)
+- HND 135 of 339 (40%)
+- IDN 46 of 146 (32%)
+- FSM 15 of 23 (65%)
+- MOZ 83 of 669 (12%) Nice work MOZ
+- PHL  of 2559 (9%)
+- PLW  of 37 (8%)
+
+
+
+Cluster 3
+```{r}
+
+c_3_mean <- cluster_3_df %>% 
+  summarise(eng_mean = mean(eng_mean),
+                  agree_mean  = mean(agree_mean))
+
+c3_country_counts <- cluster_3_df %>% 
+  count(country)
+
+
+ggplot() +
+  geom_point(data = cluster_3_df,
+       aes(x = agree_mean, y = eng_mean,
+           color = country),
+           size = 1) +
+  geom_point(data = c_3_mean,
+             aes(x = agree_mean, y = eng_mean), 
+           size = 6, shape = "triangle", alpha = 0.6, show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Cluster 3", 
+      color = "Country") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+
+
+
+# Density time
+ggplot(data = cluster_3_df,
+       aes(x = agree_mean, y = eng_mean)) +
+  geom_bin2d(bins = 20) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw() +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Density of Cluster 3") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2))
+
+```
+*Figure 10: Cluster 3 is the commitment cluster; they agree with fishery conservation and participate in local management. A few of them are below the mean for engagement, and some moderately disagreeing fishers also find themselves here. With a mean of (0.30, 0.87,) these respondents stand out as the attitudes that Rare wants to see (after campaign implementation.) N = 1002* 
+
+Engagement ranges -0.28 (only 1% are below 0) to 1.59.
+Agreement ranges -1 to 1. 1/3 of all observations are below 0
+...We see that engagement is what separates the "committed" folks from the pack. 
+
+Highest density lies at (0,1.) However, we see a vertical density at 0.5 agreement, ranging from 0.5 to 1.25. The grand majority of the cluster lies in this range, with smaller groups at the maximum scores for engagement and agreement. Reminder that to have an engagement "maximum" these people volunteer for enforcement, attend meetings, and have some type of leadership role. 
+
+Country Notes (hypothesis= PHL dominates)
+- 311 from MOZ (that's a lot for them, 46% of the 669!)
+PHL is equally proportioned, while Brazil is extremely low, as is Honduras.
+
+
+- BRA 30 of 573 (5%)
+- HND 25 of 339 (7%)
+- IDN 37 of 146 (25%)
+- FSM 2 of 23 (8%)
+- MOZ 311 of 669 (46%)
+- PHL 582 of 2559 (34%)
+- PLW 15 of 37 (41%)
+
+
+
+
+Cluster 4
+
+```{r}
+
+c_4_mean <- cluster_4_df %>% 
+  summarise(eng_mean = mean(eng_mean),
+                  agree_mean  = mean(agree_mean))
+
+
+c4_country_counts <- cluster_4_df %>% 
+  count(country)
+
+
+ggplot() +
+  geom_point(data = cluster_4_df,
+       aes(x = agree_mean, y = eng_mean,
+           color = country),
+           size = 1) +
+  geom_point(data = c_4_mean,
+             aes(x = agree_mean, y = eng_mean), 
+           size = 6, shape = "triangle", alpha = 0.6, show.legend = FALSE) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Cluster 4", 
+      color = "Country") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+
+ggplot(data = cluster_4_df,
+       aes(x = agree_mean, y = eng_mean)) +
+  geom_bin2d(bins = 20) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw() +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Density of Cluster 4") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2))
+
+```
+*11a: Only a few fishers are below -1 engagement, while agreeing this much. They agree more(?) that Cluster 1, but otherwise look close to identical. Mean = (0.314, -0.18) N = 1554, largest group.* 
+
+*11b: There is a sparse line of these unengaged fishers who agree completely with rules. The majority though find themselves between 0 and 1 for agreement (pretty high!) and between -0.5 and 0.5 for engagement. Most of those are below 0. Density is pretty unimodal*
+
+Country Notes
+- BRA 246 of 573 (37%)
+- HND 156 of 339 (46%)
+- IDN 49 of 146 (33%)
+- MOZ 210 of 669 (31%)
+- PHL 874 of 2559 (34)
+- PLW 19 of 37 (51%)
+
+2/3 are below neutral engagement. 
+
+
+
+
+
+##### Country-specific cluster maps 
+
+Philippines:
+```{r}
+
+cl_phil <- scaled_km_df %>% 
+  filter(country == "PHL")
+
+
+ggplot(cl_phil,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Phillipines Cluster Map", 
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7)))
+
+cl_phil_count <- 
+  cl_phil %>% 
+  count(cluster_no)
+
+```
+
+Eye Test
+- Very few observations below -1 in agreement. 
+- Clear mix across C1 and C4. 
+- Strong contingency of C3 (committed fishers)
+
+
+Indonesia: 
+
+```{r}
+
+cl_indo <- scaled_km_df %>% 
+  filter(country == "IDN")
+
+
+ggplot(cl_indo,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Indonesia Cluster Map", 
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7)))
+
+
+cl_indo_count <- 
+  cl_indo %>% 
+  count(cluster_no)
+
+```
+
+Eye-Test
+- Small N, why? 
+- Barely any dots in C1, the average fishers who see no benefit to MA
+
+
+
+Honduras
+```{r}
+
+cl_honduras <- scaled_km_df %>% 
+  filter(country == "HND")
+
+hnd_counts <- cl_honduras %>% 
+  count(cluster_no)
+
+
+ggplot(cl_honduras,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Honduras Cluster Map", 
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7)))
+
+cl_hond_count <- 
+  cl_honduras %>% 
+  count(cluster_no)
+```
+
+Eye Test
+- Huge spread of resistant fishers
+- Very few from Cluster 1
+- Includes some disagreeing folks who sit well above neutral engagement (creative fishers.)
+- Even the Average fishers here are more engaged than other countries
+
+
+```{r}
+
+cl_micro <- scaled_km_df %>% 
+  filter(country == "FSM")
+
+
+ggplot(cl_micro,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Micronesia Cluster Map", 
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7)))
+
+cl_micro_count <- 
+  cl_micro %>% 
+  count(cluster_no)
+```
+
+
+
+Mozambique
+
+```{r}
+
+cl_moz <- scaled_km_df %>% 
+  filter(country == "MOZ")
+
+
+ggplot(cl_moz,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mozambique Cluster Map", 
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7)))
+
+cl_moz_count <- 
+  cl_moz %>% 
+  count(cluster_no)
+```
+
+Eye-test
+- Mozambique is the most committed country.
+How'd this come to be? Is MA better than previous management? 
+
+```{r}
+
+cl_brazil <- scaled_km_df %>% 
+  filter(country == "BRA")
+
+bra_counts <- cl_brazil %>% 
+  count(cluster_no)
+
+
+ggplot(cl_brazil,
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Brazil Cluster Map", 
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7)))
+
+cl_bra_count <- 
+  cl_brazil %>% 
+  count(cluster_no)
+```
+
+
+At first it looks like a full spread, but the majority lie between 0 and -1 engagement, and from there range widely across agreement. 
+
+
+##### A side-step to refine our index: Comparing subquestions in x30 (Trusting different groups)
+
+We're adding 1 question to the Agreement index, either `x30_trust_local_decision` or `30_trust_regional_decision`
+
+I'll run a `corplot` how the two questions compare
+
+```{r}
+x30_compared <- 
+  hhs_complete_filtered %>% 
+  select(x30_trust_local_decision, x30_trust_regional_decision) %>% 
+  drop_na()
+
+corrplot(cor(x30_compared))
+
+```
+
+alright, they're highly correlated, we're going to stick with "local decision-makers"
+
+

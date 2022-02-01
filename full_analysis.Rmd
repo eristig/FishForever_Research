@@ -572,7 +572,7 @@ Now  columns [24:33] within `hhs_complete_filtered` are all of the Engagement an
 
 
 
-*12/27/21*
+##### Comparing subquestions in x30 (Trusting different groups)
 
 We're adding 1 question to the Agreement index, either `x30_trust_local_decision` or `30_trust_regional_decision`
 
@@ -604,8 +604,6 @@ We'll call it **hhs_filtered_numeric**
 
 ###### Engagement
 
-NOTE TO DYL, INCLUDE 2-3 WORD IDNICATOR PER QUESTION BELOW
-Quantification list:
 
 - 44: Yes/No 1/-1 (We recoded not sure to 0, see Methods)
 - 45: Yes/No 1/-1 (We recoded 'Not sure to 0, see Methods)
@@ -801,22 +799,22 @@ Now, I **believe** it's time to scale the data!
 Let's just make a quick table with the *counts* of all the survey responses that we have for analysis. 
 
 ```{r}
-# hhs_filtered_count <- hhs_filtered_numeric %>% 
-#   count(ma_name) %>% 
-#   arrange(-n) %>% 
-#   #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>% 
-#   adorn_totals("row") %>% 
-#   rename("Managed Access Area" = ma_name) %>% 
-#   rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
-# 
-# 
-# count_table <- knitr::kable(hhs_filtered_count, format = "html", caption = "Engagement and Agreement Summary") %>% 
-#   #column_spec(1, italic = TRUE) %>% 
-#  # row_spec(dim(hhs_filtered_count)[1], bold = TRUE) %>%
-#   kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>% 
-#   collapse_rows(columns = 1, valign = "middle")
-# 
-# count_table
+hhs_filtered_count <- hhs_filtered_numeric %>%
+  count(ma_name) %>%
+  arrange(-n) %>%
+  #mutate(level1_name = fct_reorder(level1_name, n, sum)) %>%
+  adorn_totals("row") %>%
+  rename("Managed Access Area" = ma_name) %>%
+  rename("Number of surveys with all 'Agreement' and 'Engagement' questions answered" = n)
+
+
+count_table <- knitr::kable(hhs_filtered_count, format = "html", caption = "Engagement and Agreement Summary") %>%
+  #column_spec(1, italic = TRUE) %>%
+ # row_spec(dim(hhs_filtered_count)[1], bold = TRUE) %>%
+  kable_styling(c("condensed", "responsive", "bordered"), full_width = F, position = "right") %>%
+  collapse_rows(columns = 1, valign = "middle")
+
+count_table
 
 ```
 
@@ -1313,30 +1311,6 @@ Potential Regression Model:
 [https://stats.idre.ucla.edu/r/dae/multinomial-logistic-regression/]
 
 
-##### Statistical Summaries of Agreement and Engagement
-
-Making some tables and graphs for Claudia + Rare: 
-
-
-```{r}
-
-hhs_scaled_character <- hhs_scaled %>% 
-  as.character(c(24:34))
-
-engage_scaled_sum <- hhs_scaled %>%
-  select(24:28)
-  
-st(engage_scaled_sum)
-
-agree_scaled_sum <- hhs_scaled %>% 
-  select(29:33)
-
-
-st(agree_scaled_sum)
-```
-
-Great, here we see basic statistics for each component of these two indices! 
-
 
 #### Cluster Analysis witk `NbClust` and K-means Clustering
 
@@ -1388,36 +1362,10 @@ scaled_km_df_draft <- data.frame(scaled_sum, cluster_no = factor(scaled_km$clust
 
 Below, I make a df that adds the Cluster Number `cluster_no` to the large   `scaled_sum` df
 
-```{r}
-# cluster_df<- data.frame(scaled_sum, cluster_no = factor(scaled_km$cluster))   
-```
-
-
-
-```{r}
-# ggplot() +
-#   geom_point(data = cluster_df,
-#        aes(x = agree_mean, y = eng_mean,
-#            color = cluster_no),
-#            size = 0.7, alpha = 0.7) +
-#   labs( x = "Agreement (Scaled across 5 Questions)",
-#       y = "Engagement (Scaled across 5 Questions)",
-#       title = "Mapping Clusters",
-#       color = "Cluster") +
-#   scale_x_continuous(limits = c(-3, 2),
-#                      breaks = c(-2, -1, 0, 1, 2)) +
-#    scale_y_continuous(limits = c(-1.5, 2),
-#                      breaks = c( -1, 0, 1, 2)) +
-#    guides(colour = guide_legend(override.aes = list(size=7)))
-```
 
 
 It's time to decide if there are 4 or 3 Clusters. 
 When we pick 4, we see 2 overlapping clusters in the lower right. One looks to be a bit more agreeing, and includes the folks who are fully agreeing. 
-
-
-
-
 
 
 
@@ -1534,23 +1482,8 @@ Both C1 and C4 (average fishers) have higher values in question x61g (willingnes
 
 
 
-Looking at Question 43 for Clusters 1 and 4. 
-I' make a df `checking_43` that dives into that survey question for the 2 clusters of interest.
 
-
-
-
-Below are updated plots, by cluster (1/6/22)
-```{r}
-
-x45_clustered <- scaled_km_df %>% 
-  group_by(cluster_no) %>% 
-  count(x45_leadership_position)
-```
-
-
-
-##### Cluster 1 (Average fishers who don't attend)
+*df for each Cluster*
 ```{r, include=FALSE}
 
 cluster_1_df <- scaled_km_df %>% 
@@ -2119,12 +2052,6 @@ swtiched_enforcement_counts <- enforcement_df %>%
   group_by(cluster_no) %>% 
   count(x49_enforcement_responsible)
   
-  
-#  recode_factor(`44_meeting_attendance`, "" = "Fisheries Management Body"))
-# recode_factor(`44_meeting_attendance`, "" = "Fisheries Management Body"))
-# recode_factor(`44_meeting_attendance`, "" = "Fisheries Management Body"))
-# recode_factor(`44_meeting_attendance`, "Subnational Government,Fisheries Management Body" = "Fisheries Management Body"))
-
 
 ### Data cleaning
 
@@ -2260,75 +2187,7 @@ collapse_rows(columns = 3, valign = "middle")
 
 
 enforcement_kable_1
-
-  
-
 ```
-
-First note: what does "Subnational Government" mean? 
-
-
-Comparing "Subnational government" and "No enforcement system"
-
-
-```{r} 
-three_filter_enforcement <- enforcement_df %>% 
-  filter(x49_enforcement_responsible %in% c("Subnational Government",
-                                            "National Government",
-                                            "No enforcement system"))
-
-ggplot(three_filter_enforcement,
-       aes(x = agree_mean, y = eng_mean, color = x49_enforcement_responsible)) +
-  geom_point(size = 0.7) +
-  labs( x = "Agreement (Scaled across 5 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "Enforcement and Complaince (National, Subnational, and No Enforcement", 
-      color = "Enforcement Type") +
-  scale_x_continuous(limits = c(-3, 2),
-                     breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2)) +
-  guides(colour = guide_legend(override.aes = list(size=7))) +
-  scale_color_manual(values = c("gold", "darkgreen", "blue"))
-
-
-no_enforcement <- enforcement_df %>% 
-  filter(x49_enforcement_responsible == "No enforcement system")
-
-st(no_enforcement)
-
-
-```
-
-No enforcement system lacks engaged folks, perhaps because they cannot volunteer for enforcement 
-There is more high agreement among fishers who believe that their National Government is responsible for fishery enforcement
-The very-unengaged (<1 -1) have an even spread across the 3 types. 
-The very-engaged (>1) all have some sort of enforcement system. 
-
-
-
-
-
-```{r}
- 
-comparing_enforcement <- enforcement_df %>% 
-  filter(x49_enforcement_responsible %in% c("Fisheries Management Body",
-                                         "Subnational Government",
-                                         "National Government", na.rm = FALSE))
-
-
-
-ggplot(data = comparing_enforcement) +
-  geom_point(aes(x = agree_mean, y = eng_mean, color = cluster_no), size = 0.6) +
-  guides(colour = guide_legend(override.aes = list(size=7))) +
-  labs( title = "Three Main Enforcement Responsibilities") +
-  facet_wrap(~x49_enforcement_responsible)
-
-```
-Color-blind Dyl here, uh oh! I'm going to need to see some tables 
-FMP has fewer fishers who heavily disagree. That said, I can't see much from these graphs so far, other than the interpretations from the bar graph.  
-
-
 
 OK! Dad wants to see boat ownership 
 Hypothesis: Fishers without boats are less likely to engage
@@ -2444,7 +2303,7 @@ job_security_counts <- food_security %>%
   mutate(x23_job_secure = recode_factor(x23_job_secure, "1" = "Secure",
                                         "0" = "Not Secure")) %>% 
   group_by(x23_job_secure) %>% 
-  count(cluster_no) 
+  count(cluster_no)  
 ```
 Wavering: 55% job secure
 Resistant: 46% job secure
@@ -2456,7 +2315,7 @@ Let's graph this
 ```{r}
 ggplot(job_security_counts,
        aes(x = cluster_no, y = n, fill = x23_job_secure)) +
-  geom_bar(position="stack", stat="identity", alpha = 0.7) +
+  geom_bar(position="fill", stat="identity", alpha = 0.7) +
   labs( x = "Fisher Type",
       y = "Total Fishers",
       title = "Job Security", 
