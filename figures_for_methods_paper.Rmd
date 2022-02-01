@@ -79,7 +79,13 @@ We now have one (x,y) point for each fisher observation, and can map them onto a
 *Figure 1: A plot with the **neutral* fisher reported within the  spread of our Z-score-based indices. We see that Ms. Neutral is 1 SD below the mean in agreement. This location means that the majority of fishers at least somewhat agree with rules in place. Meanwhile, we see dense grouping between -0.5 and 0.5 on both axes. Quite a few fishers have the maximum score for agreement, while a smaller number meet the *ceiling* of engagement. 
 
 
-Rare seems quite interested in addressing how fishers may be willing to *engage* more. 
+
+
+Between Cluster 1 and 4 (our "average" fishers,) we see that C4 is a full sd higher on question 43 "Do you think there is any benefit to regulating fishing via a managed access area and a reserve area?"
+
+Both C1 and C4 (average fishers) have higher values in question x61g (willingness to change fishing behavior for the sake of conservation,) and they slightly disagree with "encouraging others to follow regulations."
+
+*Average* fishers aren't engaging much (including meeting attendance.) From an NGO perspective, if one wants to shift fisher behavior+attitudes, then try and bring the reluctant folks into the governance process.  
 
 
 #### 2. Compliance Behaviors of Admitted rule-breakers 
@@ -191,6 +197,22 @@ Between Cluster 1 and 4 (our "average" fishers,) we see that C4 is a full sd hig
 Both C1 and C4 (average fishers) have higher values in question x61g (willingness to change fishing behavior for the sake of conservation,) and they slightly disagree with "encouraging others to follow regulations."
 
 *Average* fishers aren't engaging much (including meeting attendance.) From an NGO perspective, if one wants to shift fisher behavior+attitudes, then try and bring the reluctant folks into the governance process.  
+
+
+```{r}
+
+kmeans_kable <- head(cluster_summary_df) %>% 
+kable( format = "html", caption = "Summary of Clusters") %>%
+   kable_styling(bootstrap_options = "striped",
+                full_width = F,
+                position = "left") %>%
+collapse_rows(columns = 3, valign = "middle")
+
+
+kmeans_kable
+```
+
+
 
 #### 4. Perceived Catch + Clusters
 
@@ -304,6 +326,9 @@ ggplot(x19_sans_phl) +
   theme_bw() +
   labs(fill = "Perceived Fish Catch")
 ```
+
+
+
 
 
 ##### 5. Fishing Effort in "Low Season"
@@ -531,6 +556,79 @@ ggplot(x55_cluster_counts,
    scale_fill_viridis(discrete = T)
 
 ```
+
+
+#### #8. Enforcement Type + Clusters 
+
+*Starting with Enforcement* 
+```{r}
+
+
+enforcement_df <- scaled_km_df %>% 
+  select(eng_mean, agree_mean, cluster_no, x49_enforcement_responsible, x51b_fishers_reserves, country) %>% 
+filter(x49_enforcement_responsible %in% c("Fisheries Management Body",
+                                         "Subnational Government",
+                                         "No enforcement system",
+                                         "Myself",
+                                         "National Government", na.rm = FALSE))
+
+### To make a grouped bar chart, I want counts for each cluster
+
+
+enforcement_counts <- enforcement_df %>% 
+  select(eng_mean, agree_mean, cluster_no, x49_enforcement_responsible, x51b_fishers_reserves, country) %>% 
+  group_by(x49_enforcement_responsible) %>% 
+  count(cluster_no)
+
+  
+swtiched_enforcement_counts <- enforcement_df %>% 
+  group_by(cluster_no) %>% 
+  count(x49_enforcement_responsible)
+  
+
+### Data cleaning
+
+
+
+
+ggplot(swtiched_enforcement_counts,
+       aes(x = cluster_no, y = n, fill = x49_enforcement_responsible)) +
+  geom_bar(position="dodge", stat="identity") +
+  labs( x = "Cluster #",
+      y = "Enforcement",
+      title = "Enforcement By Cluster", 
+      Fill = "Enforcement Type") +
+    guides(colour = guide_legend(override.aes = list(size=7))) 
+
+
+  # scale_x_continuous(limits = c(-3, 2),
+  #                    breaks = c(-2, -1, 0, 1, 2)) +
+  #  scale_y_continuous(limits = c(-1.5, 2),
+  #                    breaks = c( -1, 0, 1, 2)) +
+
+
+
+ggplot(enforcement_counts,
+       aes(x = x49_enforcement_responsible, y = n, fill = cluster_no)) +
+  geom_bar(position="dodge", stat="identity", alpha = 0.8) +
+  labs( x = "Enforcement Responsibility",
+      y = "Cluster",
+      title = "Enforcement By Cluster", 
+      color = "Cluster") +
+  geom_text(aes(label = n),position = position_dodge(0.9), vjust = 1, size = 2, color = "gray1") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+
+```
+
+"Who is responsible for enforcement in
+your community?
+1. Fisheries Management Body
+2. National Government
+3. Subnational Government
+4. Other (please state)
+5. There is no enforcement system"
 
 
 
