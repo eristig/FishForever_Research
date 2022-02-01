@@ -27,11 +27,6 @@ library(vtable)
 library(stargazer)
 library(viridis)
 library(NbClust)
-library(car)
-library(corrplot)
-library(RColorBrewer)
-library(forcats)
-library(viridis)
 library(data.table)
 # library(treemap)
 library(fmsb)
@@ -92,6 +87,7 @@ Rare seems quite interested in addressing how fishers may be willing to *engage*
 
 counts_63 <- scaled_sum %>% 
   count(x63_fishing_in_reserve, country)
+
 
 filtered_63 <- scaled_sum %>% 
   filter(x63_fishing_in_reserve == "1")

@@ -1,0 +1,66 @@
+---
+title: "Managed-Access Grouping (Larissa + Dyl)"
+author: "Dylan Glave"
+date: "2/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(plyr)
+library(tidyverse)
+library(here)
+library(janitor)
+library(tidyverse)
+library(kableExtra)
+library(knitr)
+library(lavaanPlot)
+library(lavaan)
+library(naniar)
+library(here)
+library(scales)
+library(foreign)
+library(nnet)
+library(reshape2)
+library(vtable)
+library(stargazer)
+library(viridis)
+library(NbClust)
+library(data.table)
+# library(treemap)
+library(fmsb)
+library(ggridges)
+```
+
+
+##### Reading in Data
+
+
+```{r}
+scaled_sum <- read.csv("scaled_sum.csv")
+hhs_all_complete <- read_csv("hhs_all_complete.csv")
+scaled_km_df <- read_csv("scaled_km_df.csv")
+```
+
+
+##### Ridgeline plot for MAs
+
+```{r}
+ggplot(diamonds, aes(x = price, y = cut, fill = cut)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+```
+
+df with MAs and question 19
+```{r}
+x19_by_ma <- scaled_km_df %>% 
+  select(x19_current_fish_catch, cluster_no, ma_name, country) %>% 
+  group_by(ma_name) %>% 
+  count(x19_current_fish_catch) %>% 
+  drop_na()
+```
+
+Hey Larissa, I was thinking a ridgeline plot..it's not going how I planned. I'll leave this to your creative brain and get back to organizing Figures. This **should** be kind of fun, let me know if you get frustrated. 
+Dyl.
