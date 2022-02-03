@@ -254,47 +254,11 @@ ggplot(data = x64_counts,
 
 
 
-###### Engagement-Only Clustering
-*This is not part of our continuing analysis*
-```{r}
-
- cluster_number_est <- NbClust(scaled_sum[24:28], min.nc = 2, max.nc = 8, method = "kmeans")
-
-
-```
-
-
-So R has suggested that there are *3* meaningful clusters for engagement. 
 
 
 For now, I run the clusters, and we can go back. 
 
 
-Looking at 3 clusters:
-
-```{r}
-
-### First I'll just select the engagement variables
-
- engagement_only <- scaled_sum %>%
-  select(24:28)
-
- engagement_km <- kmeans(engagement_only, 3) ## The 4 means the amount of clusters we're looking at
-
-
- engagement_km
-
- engagement_cl <- scaled_sum, factor(engagement_km$cluster_no)
- 
-```
-
-OK! That's a whole lot of information. 
-
-
-I'll look at a couple key factors
-
-- size
-- cluster (which cluster each observation is in)
 
 
 
@@ -507,6 +471,447 @@ Center = (-0.837729407, -0.4569608) (Agreement, Engagement)
 N = 620, smallest cluster. 
 
 
-### More visualizations with Clusters 
+### Section B - More visualizations with Clusters 
 
 I've made heaps of visualizations to understand where we see variation between Clusters and where we do not (both can be insightful!)
+
+
+##### B1. Boat Ownership + Clusters 
+
+Hypothesis: Fishers without boats are less engaged.
+```{r} 
+boat_ownership <- scaled_km_df %>% 
+  select(eng_mean, agree_mean, x21_boat_owner_status, cluster_no, x23_job_secure, country, x49_enforcement_responsible, x11d_income_fishing_industrial, x11c_income_fishing_artisanal)
+
+boat_counts <- boat_ownership %>% 
+  group_by(cluster_no) %>% 
+  count(x21_boat_owner_status)
+
+
+ggplot(boat_counts,
+       aes(x = x21_boat_owner_status, y = n, fill = cluster_no)) +
+  geom_bar(position="fill", stat="identity") +
+  labs( x = "Boat Ownshership",
+      y = "Cluster",
+      title = "Oh, you got a boat?", 
+      color = "Cluster") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
+
+- When the collective owns a boat, C4 dominates, C2 (super-engaged) shrinks
+- When fishers share boats "as an employee" (meaning their boss owns a boat?) there are more resistant fishers. 
+- Fishers who own their own boat have a larger contingent of Cluster 1
+- Renters are the most "super-engaged" (C2) and least resistant (C5)
+
+Let's break this down by country, to check if boat status and country are heavily correlated 
+
+```{r} 
+
+boats_by_country <- boat_ownership %>% 
+  filter(country != "PHL") %>% 
+  group_by(x21_boat_owner_status) %>% 
+  count(country)
+
+ggplot(boats_by_country,
+       aes(x = x21_boat_owner_status, y = n, fill = country)) +
+  geom_bar(position="fill", stat="identity") +
+  labs( x = "Boat Ownshership",
+      y = "Country",
+      title = "Who got boats?", 
+      color = "Country") +
+    guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+```
+A lot of renting on Honduras! 
+Mozambique and Brazil have a lot of collective ownership 
+Brazil also has a lot of boat owners 
+Mozambique has the highest percentage of fishers who fish without boats, even more than Brazil (where I know many fishers collect crabs and other invertebrates)
+
+
+###### B2. Seafood Dependence
+Let's see how people who are dependent on seafood comply: 
+Note: NOT in use for any active analysis
+```{r} 
+
+seafood_clean <- food_security %>% 
+  drop_na(x60_hh_fish_consumption)
+
+ggplot(seafood_clean,
+       aes(x = agree_mean, y = eng_mean, color = x60_hh_fish_consumption)) +
+  geom_point(size = 0.7) +
+  labs( x = "Agreement (Scaled across 5 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Seafood Dependence", 
+      color = "Cluster", 
+      caption = "Hypothesis: People who eat more fish are more engaged") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+  guides(colour = guide_legend(override.aes = list(size=7))) 
+
+
+
+seafood_counts <- seafood_clean %>% 
+  group_by(cluster_no) %>% 
+  count(x60_hh_fish_consumption) %>% 
+ pivot_wider(names_from = cluster_no, values_from = n) 
+```
+
+
+###### B3. Perceived Catch, By Country
+
+I just want to check the counts of x19 by country
+```{r} 
+
+no_na_19 <- scaled_km_df %>% 
+    drop_na(x19_current_fish_catch) %>% 
+ mutate(x19_current_fish_catch = recode_factor(x19_current_fish_catch, 
+    "Declined a lot" = "1. Declined a lot",
+          "Declined slightly" = "2. Declined slightly",
+           "Stayed the same" = "3. Stayed the same",
+          "Improved slightly" = "4. Improved slightly",
+          "Improved heavily" = "5. Improved heavily")) 
+
+x19_by_country <- no_na_19 %>% 
+  group_by(country) %>% 
+  count(x19_current_fish_catch)
+
+ggplot(x19_by_country) +
+  geom_bar( aes(x = country, y=n, fill = x19_current_fish_catch), stat="identity", alpha=0.8) +
+  theme_bw() +
+  labs(fill = "Perceived Fish Catch")
+
+x19_sans_phl <- no_na_19 %>% 
+  filter(country != "PHL") %>% 
+    group_by(country) %>% 
+  count(x19_current_fish_catch)
+
+ggplot(x19_sans_phl) +
+  geom_bar( aes(x = country, y=n, fill = x19_current_fish_catch), stat="identity", alpha=0.8) +
+  theme_bw() +
+  labs(fill = "Perceived Fish Catch")
+```
+
+###### B4. Question 64, Morality of breaking rules
+
+Clusters with question 64: How wrong is fishing in the reserve? 
+
+```{r}
+ 
+three_part_64 <- scaled_km_df %>% 
+  mutate(x64_wrong_fishing_reserve = recode_factor(x64_wrong_fishing_reserve, 
+                                        "5" = "Very Wrong",
+                                        "4" = "Very Wrong",
+                                        "3" = "Slightly Wrong", 
+                                        "2" = "Slightly Wrong",
+                                        "1" = "Not Wrong",
+                                        "0" = "Not Wrong")) 
+
+ggplot() +
+  geom_point(data = three_part_64,
+       aes(x = agree_mean, y = eng_mean,
+           color = cluster_no, shape = x64_wrong_fishing_reserve), size = 1.1, alpha = 0.8) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mapping Clusters",
+      color = "Cluster") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7))) 
+
+```
+
+
+So, kind of everyone thinks its pretty wrong, huh. Also a ton of NAs, hard to limit that noise
+
+
+###### B5. Clusters and 63, admitted rule-breakers
+```{r}
+
+x63_clusters <- scaled_km_df %>% 
+  filter(x63_fishing_in_reserve == "1")
+
+ 
+x63_means <- x63_clusters %>% 
+  select(eng_mean, agree_mean) %>% 
+  drop_na()  
+  st(x63_means) 
+
+
+ggplot(data = x63_clusters, aes(x = agree_mean, y = eng_mean,
+           color  = x64_wrong_fishing_reserve),
+           size = 0.7, alpha = 0.7) +
+  geom_point(size = 1) +
+  labs( x = "Agreement (Scaled across 6 Questions)",
+      y = "Engagement (Scaled across 5 Questions)",
+      title = "Mapping Clusters of Rule-breakers",
+      color = "Morality") +
+  scale_x_continuous(limits = c(-3, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-1.5, 2),
+                     breaks = c( -1, 0, 1, 2)) +
+   guides(colour = guide_legend(override.aes = list(size=7))) 
+
+
+
+```
+
+###### B6. Jitter Plot of Engagement and Clusters
+
+This helps visualize points of densities among Clusters
+```{r}
+ggplot(data = scaled_km_df,
+       aes(x = country, y = eng_mean, color = cluster_no)) +
+  geom_point(size = 0.4) +
+  geom_jitter(size = 0.4) +
+   guides(colour = guide_legend(override.aes = list(size=7)))
+
+```
+Notes: 
+- Resistant fishers are far more present in BRA, HND and PHL. However, HND and BRA both spread from the lowest to highest engagement possibilities. This mean there is OPPORTUNITY to be a leader, enforce, etc. 
+
+
+###### B7. Clusters and Gender
+```{r}
+
+gender_mean <- scaled_km_df %>% 
+  group_by(x6_gender) %>% 
+  summarise(eng_mean = mean(eng_mean),
+                  agree_mean  = mean(agree_mean))
+
+
+ggplot() +
+  geom_jitter(data = scaled_km_df, 
+       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
+  geom_point(data = gender_mean, 
+            aes(x = agree_mean, y = eng_mean), color = "black", size = 7, alpha = 0.6) +
+   guides(colour = guide_legend(override.aes = list(size=7))) +
+  facet_wrap(~x6_gender) 
+
+```
+Female mean = (-0.06947793, -0.03637067)
+
+Male mean =  (0.04032597, 0.02179388)
+
+This was not the case before! Were all within 0.1 of zero, to be clear. But when we add Brazil, the mean for men increases
+
+
+###### B8. Clusters and Question 4
+
+```{r} 
+q_4_clustered <- scaled_km_df %>% 
+  select(x4_ma_r_mb, cluster_no, eng_mean, agree_mean) %>% 
+  drop_na(x4_ma_r_mb) %>% 
+ group_by(cluster_no) %>% 
+  count(x4_ma_r_mb)
+
+ggplot(q_4_clustered) +
+  geom_bar( aes(x = x4_ma_r_mb, y=n, fill = cluster_no), stat="identity", alpha=0.8) +
+  theme_bw() +
+  labs(fill = "MA Status")
+
+```
+Most places have "all 3," when they've answered all of our compliance questions. 
+
+
+###### B9. Household Demographics (Question 7 with subquestions)
+
+##### Household Demographics (Question 7)
+Filed in... `side_analysis_and_viz`
+
+I'll first make a df that includes all of subquestions of Q7. 
+```{r} 
+question_7_analysis <- scaled_km_df %>% 
+  select(cluster_no, agree_mean, eng_mean, x70_hh_average_income, x7_gender, x7_age, x7_relationship, x7_education, household_size)
+```
+
+
+```{r}
+q7_reordered <- question_7_analysis %>% 
+  arrange(cluster_no)
+
+fish_treeable <- q7_reordered %>% 
+  select(cluster_no, x7_gender, x7_age, x7_relationship, x7_education, household_size) %>% 
+  group_by(cluster_no)
+
+treemap(fish_treeable,
+        index= c("cluster_no", "household_size"),
+vSize="household_size",
+type="index") 
+```
+
+OK, this hasn't worked out great. It works better with labels, huh. 
+
+
+Let's try the same graph type we did earlier, comparing Clusters with..HH size 
+
+
+
+Most households have 3, 4 or 5 members. Beyond that, there isn't a whole lot to gain from this comparison. 
+
+Let's edit ages into several groups 
+
+```{r} 
+binned_age <- question_7_analysis %>%
+  mutate(agegroup = case_when(               x7_age >= 60  ~ '60+',
+                                             x7_age >= 50  & x7_age <= 59 ~ '40-49',
+                                             x7_age >= 40  & x7_age <= 49 ~ '40-49',
+                                             x7_age >= 30  & x7_age <= 39 ~ '30-39',
+                                             x7_age >= 20  & x7_age <= 29 ~ '20-29',
+                                             x7_age <= 20 ~ "19 and Under"))
+
+agegroup_counts <- binned_age %>% 
+  drop_na(agegroup) %>% 
+  group_by(cluster_no) %>% 
+  count(agegroup)
+
+
+```
+
+I broke ages of respondents into 6 groups. This may be too many to visualize alongside all 4 Clusters. 
+
+```{r}
+ggplot(agegroup_counts, 
+       aes(x = cluster_no, y = n, fill = agegroup)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Fishers per Group",
+      title = "What age are the Clusters?", 
+      fill = "Age Group", 
+      caption = "Hypothesis: Older fishers are more engaged") +
+   geom_text(aes(label = n),position = position_fill(0.9), vjust = 2, size = 2, color = "gray1")+
+   scale_fill_viridis(discrete = T) +
+  theme_bw()
+```
+Ok, what do we see?! 
+
+There were so many respondents under 20, wow! Perhaps I should be looking at 'household heads' if we really wanted this analysis of fisher ages. This is still interesting. 
+
+Cluster 3 has a small proportion of older fishers, and a huge contingent of respondents under 20. About 50% of each cluster is 30 and under (and likewise 30 and over)
+
+
+Let's do 1 more subsection of Q7. Binned HHS size? Or Relationship? I'll start with relationship. 
+Filed in... *Nowhere. Exploratory section fo original analysis.*
+```{r} 
+relationship_counts <- question_7_analysis %>% 
+  drop_na(x7_relationship) %>% 
+  filter(x7_relationship != "Other") %>%
+  filter(x7_relationship != "Other parent") %>%
+  filter(x7_relationship != "Domestic help") %>%
+  filter(x7_relationship != "Aquaintance") %>% 
+  group_by(cluster_no) %>%
+  count(x7_relationship)
+```
+
+```{r}
+ggplot(relationship_counts,
+       aes(x = cluster_no, y = n, fill = x7_relationship)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
+  labs( x = "Clusters (1 and 4 are 'average')",
+      y = "Fishers per Group",
+      title = "Differences in Respondent Type", 
+      fill = "Household Role of Respondent", 
+      caption = "Hypothesis: Older fishers are more engaged") +
+   geom_text(aes(label = n),position = position_fill(0.9), vjust = 2, size = 2, color = "gray1")+
+   scale_fill_viridis(discrete = T) +
+  theme_bw()
+```
+
+This is challenging because we're not likely seeing responses from the fisher of each house, rather we hear from whomever was home. If this happened to show spouses who were the fishers, vs. child fishers, etc... that would be more insightful. I'll bring this up to the group. 
+
+
+##### Showing Worded responses to each Engagement/Agreement Question, for each cluster 
+
+```{r} 
+median_cluster_df <- scaled_km_df %>% 
+  select(country, cluster_no, 25:35) %>% 
+  group_by(country) %>% 
+summarise_if(is.numeric, median) %>% 
+mutate(x44_meeting_attendance = recode_factor(x44_meeting_attendance, "1" = "Yes",
+                                              "-1"  = "No",
+                                              "0" = "Not sure")) %>% 
+  mutate(x45_leadership_position = recode_factor(x45_leadership_position, "1" = "Yes",
+                                                 "-1"  = "No",
+                                                 "0" = "Not sure")) %>% 
+  mutate(x48_enforcement_participation = recode_factor(x48_enforcement_participation,
+                                                       "1" = "Yes",
+                                                       "-1"  = "No",
+                                                       "0" = "Not sure")) %>%    mutate(x53_encourage_regulations = 
+            recode_factor(x53_encourage_regulations,    "-2" = "Never",
+                                                        "-1" = "Rarely",
+                                                        "0" = "Sometimes",   
+                                                        "2" = "Often",
+                                                          "2" = "Very often")) %>% 
+  mutate(x61g_fishing_change_behavior = 
+            recode_factor(x61g_fishing_change_behavior, "1" = "Strongly disagree",
+                                                        "2" = "Disagree",
+                                                        "3" = "Neutral", 
+                                                        "4" = "Agree",
+                                                        "5" = "Strongly agree")) %>% 
+  mutate(x61a_current_regulations = 
+            recode_factor(x61a_current_regulations, "1" = "Strongly disagree",
+                                                        "2" = "Disagree",
+                                                        "3" = "Neutral", 
+                                                        "4" = "Agree",
+                                                        "5" = "Strongly agree")) %>% 
+  mutate(x61f_rights_distribution_fair = 
+            recode_factor(x61f_rights_distribution_fair, "1" = "Strongly disagree",
+                                                        "2" = "Disagree",
+                                                        "3" = "Neutral", 
+                                                        "4" = "Agree",
+                                                        "5" = "Strongly agree")) %>% 
+  mutate(x43_ma_benefits = recode_factor(x43_ma_benefits, "1" = "Yes",
+                                              "-1"  = "No",
+                                              "0" = "Neutral/Unsure")) %>% 
+  mutate(x46_represent_interests = recode_factor(x46_represent_interests, "1" = "Yes",
+                                              "-1"  = "No",
+                                              "0" = "Neutral/Unsure")) %>% 
+  mutate(x52_ma_benefit_5yrs = recode_factor(x46_represent_interests, "1" = "Yes",
+                                              "-1"  = "No",
+                                              "0" = "Unsure")) 
+
+### Separating this into Engagement and Agreement
+median_engagement_df <-  median_cluster_df %>% 
+  select(1:6)
+
+median_agreement_df <- median_cluster_df %>% 
+  select(1, 7:12)
+
+
+median_engagement_df  %>% 
+  kable(col.names = c("Country", 
+                     "Meeting Attendeance", 
+                     "Leadership Position", 
+                     "Volunteer Enforcment",
+                     "Willingness to encourage regulations",
+                     "Willingness to change Behavior")) %>% 
+  kable_styling(bootstrap_options = "striped", 
+                full_width = F,
+                position = "left"
+                ) %>% 
+  add_header_above(c("Median Engagement Response by County" = 6))
+
+
+
+## Now using `kable` for the agreement table 
+median_agreement_df %>% 
+  
+kable(col.names =  c("Country", 
+                     "Benefits of Managed Access",
+                     "Interests Represented",
+                     "Benefit in 5 years",
+                     "Regulations helping cactch",
+                     "Fairness of fishing rights", 
+                     "Trust in Local Leadership")) %>%
+  kable_styling(bootstrap_options = "striped", 
+                full_width = F,
+                position = "left"
+                ) %>% 
+  add_header_above(c("Median Agreement Response by County" = 7))
+```

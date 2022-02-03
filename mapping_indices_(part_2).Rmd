@@ -1244,4 +1244,91 @@ corrplot(cor(x30_compared))
 
 alright, they're highly correlated, we're going to stick with "local decision-makers"
 
+##### Corrplots for many variables 
+```{r} 
 
+first_correlate_df <- scaled_km_df %>% 
+  select(agree_mean, eng_mean, x55_worry_food, x11b_income_harvesting, x11c_income_fishing_artisanal, x11d_income_fishing_industrial, x11e_income_buying_trading, x11f_income_processing, x11g_income_aquaculture, x11h_income_extraction, x11i_income_tourism, x38_reserve_fishing_allowed, x39_ma_boundaries_aware, x50_ma_punishment, x61b_catch_recording, x61c_community_participation, x61d_strong_enforcement, x61h_individual_behavior, x61i_help_neighbors, x62_reserve_compliance, x63_fishing_in_reserve, x64_wrong_fishing_reserve, x50_ma_punishment, x55_worry_food, x59_food_procurement) %>% 
+ 
+   mutate(x39_ma_boundaries_aware = recode_factor(x39_ma_boundaries_aware, 
+      "Strongly agree" = 5,
+      "Agree" = 4,
+      "Neither" = 3,
+      "Disagree" = 2, 
+      "Strongly disagree" = 1)) %>% 
+  filter(x39_ma_boundaries_aware != c("No reserve", "No managed access", "NA")) %>% 
+  filter(x50_ma_punishment != c("No management", "NA", "na")) %>% 
+  mutate(x50_ma_punishment = recode_factor(x50_ma_punishment,
+                          "Severe"= 5,
+                          "Strong" = 4, 
+                          "Moderate" = 3, 
+                          "Weak" = 2,
+                          "No punishment" = 1)) %>% 
+  drop_na(x55_worry_food) %>% 
+  mutate(x55_worry_food = recode_factor(x55_worry_food, 
+                                        "Often" = 1,
+                                        "Sometimes" = 0, 
+                                        "Never" = -1)) %>% 
+  drop_na(x59_food_procurement) %>% 
+  mutate(x59_food_procurement = recode_factor(x59_food_procurement,
+                                              "Certain" = 5,
+                                              "High chance" = 4, 
+                                              "Uncertain" = 3,
+                                              "Not confident" = 2, 
+                                              "Confident not" = 2, 
+                                              "Very confident not" = 1,
+                                              "Very not confident" = 1)) %>% 
+  mutate(x39_ma_boundaries_aware = as.numeric(x39_ma_boundaries_aware)) %>% 
+  mutate(x50_ma_punishment = as.numeric(x50_ma_punishment)) %>% 
+  mutate(x55_worry_food = as.numeric(x55_worry_food)) %>% 
+  mutate(x59_food_procurement = as.numeric(x59_food_procurement)) %>% 
+  mutate(x64_wrong_fishing_reserve = as.numeric(x64_wrong_fishing_reserve)) %>% 
+  mutate(x62_reserve_compliance = as.numeric(x62_reserve_compliance))
+
+
+
+
+# x39 was changed to 1-5, NAs dropped
+# x50 was changed to 1-5, NAs dropped
+# x55 changed to -1/1, NAs dropped
+# x59 changed to  1-5, NAs dropped
+
+
+
+
+corrplot(cor(first_correlate_df, use="pairwise.complete.obs", method = "spearman"))
+
+corrplot(cor(first_correlate_df, use="pairwise.complete.obs"), type = "lower", method = "color", col=brewer.pal(n=8, name="PuOr"))
+
+   #    method="number", 
+                   # order="hclust", 
+                   # addrect=2, 
+                   # diag=F,
+```
+
+Correlation with Engagement/Agreement:(N = Negative, P = Positive, options of strength = c(week, moderate, strong)) [E/A]
+- x11e (P, weak) [E]
+
+
+- x61c (P, weak) [E]
+- x61d (P, weak) [E]
+- x61h (N, weak) [E]
+Weak, negative correlation with Engagement: x55, x11b, x11d, x11f, x11h, x11i, x39, x50, x61h, x63, x64
+Agreement:
+- x61c (P, weak) [A]
+- x61d (P, weak) [A]
+- x61h (P, weak) [A]
+- x61i (P, weak) [A]
+- x64 (N, moderate) [A]
+- x11h (N, moderate) [A]
+x39 (N, moderate) [A]
+Weak negative correlation with agreement: 
+11b, 11c, 11d, 11f, 11g, x62, x63
+
+Other interesting correlations
+- x64 (wrong to fish in the reserve) and x11h (income from extraction) (P, moderate)
+- x61d (strong enforcement) and x11h (income form extraction) (N, moderate)
+- Strong negative correlation between 11i and 11h (tourism and extraction incomes)
+- x64 has negative correlations with x61c and x61c (community participation and strong enforcement)
+- x61c through x61 i have moderate positive correlations
+ 

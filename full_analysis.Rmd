@@ -2052,11 +2052,7 @@ swtiched_enforcement_counts <- enforcement_df %>%
   group_by(cluster_no) %>% 
   count(x49_enforcement_responsible)
   
-
-### Data cleaning
-
-
-
+### Data cleaning above
 
 ggplot(swtiched_enforcement_counts,
        aes(x = cluster_no, y = n, fill = x49_enforcement_responsible)) +
@@ -2085,8 +2081,6 @@ ggplot(enforcement_counts,
   geom_text(aes(label = n),position = position_dodge(0.9), vjust = 1, size = 2, color = "gray1") +
     guides(colour = guide_legend(override.aes = list(size=7))) +
   theme(axis.text.x = element_text(angle = 45, hjust=1))
-
-
 ```
 
 "Who is responsible for enforcement in
@@ -2099,7 +2093,6 @@ your community?
 
 
 ##### Comparing enforcement with Perceived Fish catch (Q19)
-
 
 ```{r}
 
@@ -2174,7 +2167,7 @@ Let's get some count data (classic post-visualization move)
 enforcement_wider <- enforcement_counts %>% 
   pivot_wider(names_from = x49_enforcement_responsible, 
               values_from = n) %>% 
- bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
+ bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total")
 
 
 enforcement_kable_1 <- head(enforcement_wider) %>% 
@@ -2185,11 +2178,10 @@ enforcement_kable_1 <- head(enforcement_wider) %>%
 collapse_rows(columns = 3, valign = "middle")
 
 
-
 enforcement_kable_1
 ```
 
-OK! Dad wants to see boat ownership 
+###### Boat Ownership + Clusters 
 Hypothesis: Fishers without boats are less likely to engage
 
 ```{r} 
@@ -2210,8 +2202,6 @@ ggplot(boat_counts,
       color = "Cluster") +
     guides(colour = guide_legend(override.aes = list(size=7))) +
   theme(axis.text.x = element_text(angle = 45, hjust=1))
-
-
 
 ```
 *Figure X:    *
@@ -2277,25 +2267,6 @@ Dyl's hypotheses:
 - Fishers who eat lots of seafood are more engaged than those who don't 
 - Cluster 2 (agreers) make more money than Clusters 1 and 4 (average)
 
-
-```{r} 
-ggplot(food_security,
-       aes(x = agree_mean, y = eng_mean, color = cluster_no)) +
-  geom_point(size = 0.7) +
-  labs( x = "Agreement (Scaled across 5 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "Food Security Ability", 
-      color = "Cluster") +
-  scale_x_continuous(limits = c(-3, 2),
-                     breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2)) +
-  guides(colour = guide_legend(override.aes = list(size=7))) +
-  facet_wrap(~x23_job_secure)
-
-
-
-```
 
 
 ```{r}
@@ -2427,8 +2398,7 @@ ggplot(x59_counts,
 ```
 
 
-
-Since need (so far) isn't correlating much with any particular level of compliance, let's see how people who are dependent on seafood comply: 
+Let's see how people who are dependent on seafood comply: 
 Note: NOT in use for any active analysis
 ```{r} 
 
@@ -2455,15 +2425,10 @@ seafood_counts <- seafood_clean %>%
   group_by(cluster_no) %>% 
   count(x60_hh_fish_consumption) %>% 
  pivot_wider(names_from = cluster_no, values_from = n) 
-
-
-
-
 ```
 
 Even looking at counts, we're seeing another variable without any correlation - this is kinda crazy! 
 
-What if - nothing really drives compliance behaviors other than simply attitudes about compliance? 
 
 ... There are plenty more variables to explore before we truly wonder that, though. 
 
@@ -2489,8 +2454,6 @@ ggplot(x55_cluster_counts,
 "Consider the following statement: ”I worry about not having enough food for everyone in the household” Was that often, sometimes or never true for you in the last 12 months?" 
 Alright, now we see some spread.
 
-
-
 People who "never" worry about food security skew towards lower engagement. 
 
 This is challenging because there is a far larger N within "sometimes," but we can compare the differences of "Never" and "Often." Never has some very disagreeing fishers, who engage a little (willing to change behavior, likely) 
@@ -2498,15 +2461,7 @@ This is challenging because there is a far larger N within "sometimes," but we c
 Those who often worry about food have a lot of somewhat engaged, rather agreeing folks. Let's do some stats here. 
 
 
-
-
-
-
-
-
 ##### Corrplots for many variables 
-
-
 ```{r} 
 
 first_correlate_df <- scaled_km_df %>% 
@@ -2548,13 +2503,10 @@ first_correlate_df <- scaled_km_df %>%
   mutate(x62_reserve_compliance = as.numeric(x62_reserve_compliance))
 
 
-
-
 # x39 was changed to 1-5, NAs dropped
 # x50 was changed to 1-5, NAs dropped
 # x55 changed to -1/1, NAs dropped
 # x59 changed to  1-5, NAs dropped
-
 
 
 
@@ -2593,17 +2545,12 @@ Other interesting correlations
 - Strong negative correlation between 11i and 11h (tourism and extraction incomes)
 - x64 has negative correlations with x61c and x61c (community participation and strong enforcement)
 - x61c through x61 i have moderate positive correlations
-
-
-
-Making a table of all these variables, by cluster 
-
-
+ 
 
 
 Let's compare question 19 across the axes and the clusters
 
-```{r fig.height=10, fig.width=12}
+```{r}
  
 no_na_19 <- scaled_km_df %>% 
     drop_na(x19_current_fish_catch) %>% 
@@ -2613,61 +2560,17 @@ no_na_19 <- scaled_km_df %>%
            "Stayed the same" = "3. Stayed the same",
           "Improved slightly" = "4. Improved slightly",
           "Improved heavily" = "5. Improved heavily")) 
-  
 
-
-       
-         
-         
+    
 mean_19_df <- no_na_19 %>% 
         group_by(x19_current_fish_catch) %>% 
         summarise(eng_mean = mean(eng_mean),
                   agree_mean  = mean(agree_mean)) 
-         
-
-ggplot(no_na_19,
-       aes(x = agree_mean, y = eng_mean, color = x19_current_fish_catch)) +
-  geom_point() +
- geom_point(data = mean_19_df,
-             aes(x = agree_mean, y = eng_mean), color = "black",
-           size = 5, shape = "triangle", show.legend = FALSE)+
-  labs( x = "Agreement (Scaled across 5 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "Perceived Ecological Change", 
-      color = "Change in Fish Stock (perceived)", 
-      caption = "Hypothesis: fish decline = Less Agreeing") +
-  guides(colour = guide_legend(override.aes = list(size=7))) + 
-  facet_wrap(~x19_current_fish_catch)
-
-
-
-```
-
-```{r}
-ggplot(no_na_19, 
-       aes(x = agree_mean, y = eng_mean, color = x19_current_fish_catch)) +
-  geom_point(size = 0.7) +
-  labs( x = "Agreement (Scaled across 5 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "Perceived Change in Catch", 
-      color = "Change in Fish Catch (perceived)", 
-      caption = "Hypothesis: fish decline = Less Agreeing") +
-  scale_x_continuous(limits = c(-3, 2),
-                     breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2)) +
-  guides(colour = guide_legend(override.aes = list(size=7))) 
-
 ```
 
 
 
-Eye-test notes: 
-
-
-
-For me, I'd like to see some counts 
-
+*Using x19 Counts to compare with Clusters*
 ```{r} 
 x19_counts <- no_na_19 %>% 
   count(x19_current_fish_catch)
@@ -2704,18 +2607,20 @@ ggplot(reversed_x19_counts,
   theme_bw()
 
 ```
-Here's a breakdown of the ecology question:
-
-
-
-
-Cluster 1 saw mostly declines (466/677)
-Cluster 2 has the most who saw slight improvements 
-Cluster 3
 
 
 I just want to check the counts of x19 by country
 ```{r} 
+
+no_na_19 <- scaled_km_df %>% 
+    drop_na(x19_current_fish_catch) %>% 
+ mutate(x19_current_fish_catch = recode_factor(x19_current_fish_catch, 
+    "Declined a lot" = "1. Declined a lot",
+          "Declined slightly" = "2. Declined slightly",
+           "Stayed the same" = "3. Stayed the same",
+          "Improved slightly" = "4. Improved slightly",
+          "Improved heavily" = "5. Improved heavily")) 
+
 x19_by_country <- no_na_19 %>% 
   group_by(country) %>% 
   count(x19_current_fish_catch)
@@ -2734,14 +2639,11 @@ ggplot(x19_sans_phl) +
   geom_bar( aes(x = country, y=n, fill = x19_current_fish_catch), stat="identity", alpha=0.8) +
   theme_bw() +
   labs(fill = "Perceived Fish Catch")
-
 ```
 
 ##### Showing Worded responses to each Engagement/Agreement Question, for each cluster 
 
-
 ```{r} 
-
 median_cluster_df <- scaled_km_df %>% 
   select(country, cluster_no, 24:33) %>% 
   group_by(country) %>% 
@@ -2865,8 +2767,6 @@ ggplot() +
 
 So, kind of everyone thinks its pretty wrong, huh. Also a ton of NAs, hard to limit that noise
 
-
-
 ```{r}
 
 x63_clusters <- scaled_km_df %>% 
@@ -2898,8 +2798,8 @@ ggplot(data = x63_clusters, aes(x = agree_mean, y = eng_mean,
 ```
 
 
-
-
+**Jitter Plot of Engagement and Clusters**
+This helps visualize points of densities among Clusters
 ```{r}
 ggplot(data = scaled_km_df,
        aes(x = country, y = eng_mean, color = cluster_no)) +
@@ -2914,8 +2814,6 @@ Notes:
 
 Plotting clusters by gender
 ```{r}
- 
-
 
 gender_mean <- scaled_km_df %>% 
   group_by(x6_gender) %>% 
@@ -2962,7 +2860,7 @@ Most places have "all 3," when they've answered all of our compliance questions.
 
 ##### Fishing Effort
 
-I'll clean up questions 17 and 18, and visualizae them against compliance behaviors
+I'll clean up questions 17 and 18, and visualize them against compliance behaviors
 
 ```{r} 
 fishing_effort_17 <- scaled_km_df %>% 
@@ -3060,7 +2958,7 @@ ggplot(x18_cluster_counts,
 ```
 
 ##### Household Demographics (Question 7)
-Filed in... *Nowhere. Exploratory section fo original analysis.*
+Filed in... `side_analysis_and_viz`
 
 I'll first make a df that includes all of subquestions of Q7. 
 ```{r} 
@@ -3268,5 +3166,3 @@ full_spider_df <- scaled_km_df %>%
 
 radarchart(full_spider_df)
 ```
-
-
