@@ -886,7 +886,7 @@ income_29_table <- income_counts %>%
 ##First I pivot_wider, and made a proportion table, using janitor and kableExtra
 
 income_29_props <- income_29_table %>% 
-  janitor::adorn_percentages(denominator = "col") %>% 
+  janitor::adorn_percentages(denominator = "row") %>% 
   adorn_pct_formatting(digits = 0) %>% 
   adorn_ns(position = "front")
 
@@ -974,6 +974,58 @@ chi_x23 <- chisq.test(pre_chi_x23)
 chi_x23
 ```
 **X-squared = 128.23, df = 3, p-value < 2.2e-16**
+
+
+### Section 3. Radar Plots 
+
+```{r}
+clusters_for_radar <- cluster_summary_df %>% 
+  select(4:14)
+  
+rownames(clusters_for_radar) <- c("Committed", "Resistant", "Supportive", "Wavering")
+
+max_min <- data.frame(
+  x44_mean = c(1, -1),
+  x45_mean = c (1, -1),
+  x48_mean = c(1, -1), 
+  x53_mean = c (1, -1),
+  x61g_mean = c(5, 1),
+  x43_mean = c(1, 0),
+  x46_mean = c(1, 0),
+  x52_mean = c(2, -2),
+  x61a_mean = c(5, 1),
+  x61f_mean = c(5, 1), 
+  x30a_mean = c(5, 1))
+
+rownames(max_min) <- c("Max", "Min")
+
+
+radar_df <- rbind(max_min, clusters_for_radar)
+
+ 
+committed_radar <-radar_df[c("Max", "Min", "Committed"), ]
+
+radarchart(committed_radar)
+
+resistant_radar <- radar_df[c("Max", "Min", "Resistant"), ]
+
+radarchart(resistant_radar)
+
+supportive_radar <- radar_df[c("Max", "Min", "Supportive"), ]
+
+radarchart(supportive_radar)
+
+wavering_radar <- radar_df[c("Max", "Min", "Wavering"), ]
+
+radarchart(wavering_radar)
+
+# create_beautiful_radarchart(
+#   data = wavering_radar,
+#   color = "#00AFBB") 
+
+```
+
+
 
 ### Extra Tables
 
