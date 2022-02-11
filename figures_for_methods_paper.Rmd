@@ -201,13 +201,15 @@ ggplot() +
           color = cluster_no),
            size = 6, shape = "triangle", show.legend = FALSE) +
   labs( x = "Agreement (Scaled across 5 Questions)",
-      y = "Engagement (Scaled across 5 Questions)",
-      title = "Mapping Clusters",
-      color = "Cluster") +
-  scale_x_continuous(limits = c(-3, 2),
+      y = "Engagement (Scaled across 6 Questions)",
+      title = "Mapping the Fisher Typology",
+      color = "Type") +
+  scale_x_continuous(limits = c(-3, 2.5),
                      breaks = c(-2, -1, 0, 1, 2)) +
-   scale_y_continuous(limits = c(-1.5, 2),
-                     breaks = c( -1, 0, 1, 2)) +
+   scale_y_continuous(limits = c(-2, 2),
+                     breaks = c(-2, -1, 0, 1, 2)) +
+  scale_color_viridis(discrete = T) +
+  theme_bw() +
    guides(colour = guide_legend(override.aes = list(size=7)))
 ```
 The 4 Clusters, done marked by color. Means are marked by triangles. 
@@ -241,12 +243,12 @@ kmeans_kable
 
 no_na_19 <- scaled_km_df %>% 
     drop_na(x19_current_fish_catch) %>% 
- mutate(x19_current_fish_catch = recode_factor(x19_current_fish_catch, 
-    "Declined a lot" = "1. Declined a lot",
-          "Declined slightly" = "2. Declined slightly",
-           "Stayed the same" = "3. Stayed the same",
-          "Improved slightly" = "4. Improved slightly",
-          "Improved heavily" = "5. Improved heavily")) 
+ mutate(x19_current_fish_catch = fct_relevel(x19_current_fish_catch, 
+    "Declined a lot" = "Declined a lot",
+          "Declined slightly" = "Declined slightly",
+           "Stayed the same" = "Stayed the same",
+          "Improved slightly" = "Improved slightly",
+          "Improved heavily" = "Improved heavily"))
          
          
 mean_19_df <- no_na_19 %>% 
@@ -269,15 +271,17 @@ x19_cluster_counts <- no_na_19 %>%
 
 
 ggplot(x19_cluster_counts,
-       aes(x = x19_current_fish_catch, y = n, fill = cluster_no,
-           )) +
-  geom_bar(position="fill", stat="identity") +
+       aes(x = x19_current_fish_catch, y = n, fill = cluster_no)) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
   labs( x = "Perception of Fish Stock (over last 2 years)",
       y = "Percentage",
-      fill = "Cluster") +
-    guides(colour = guide_legend(override.aes = list(size=7))) +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
+      fill = "Fisher Type") +
+  scale_fill_viridis(discrete = T) +
+    theme_bw() +
+  #  guides(colour = guide_legend(override.aes = list(size=7))) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  scale_y_continuous(labels = scales::percent)
+     
 
 reversed_x19_counts <- 
   no_na_19 %>% 
@@ -286,13 +290,15 @@ reversed_x19_counts <-
 
 ggplot(reversed_x19_counts,
        aes(x = cluster_no, y = n, fill = x19_current_fish_catch)) +
-  geom_bar(position="fill", stat="identity", alpha = 0.7) +
-  labs( x = "Clusters",
-      y = "Percentage of Cluster",
-      title = "Perceived Catch and Clusters", 
-      fill = "Perceived Change in Fish Catch \n (compared with 2 years prior)") +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
+  labs( x = "Fisher Types",
+      y = "Percentage of Group",
+      title = "Perceived Catch and  Fisher Type", 
+      fill = "Perceived Change in Catch") +
   scale_fill_viridis(discrete = T) +
-  theme_bw()
+  theme_bw() +
+   scale_y_continuous(labels = scales::percent) +
+    theme(axis.text.x = element_text(angle = 45, hjust=1))
 
 ```
 
@@ -336,7 +342,7 @@ ggplot(x17_cluster_counts,
    scale_fill_viridis(discrete = T) +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
-   theme(axis.text.x = element_text(angle = 45, hjust=1))
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
 
 
@@ -436,11 +442,11 @@ income_counts <- food_security %>%
 ggplot(income_counts,
        aes(x = cluster_no, y = n, fill = x29_family_income)) +
   geom_bar(position="fill", stat="identity", alpha = 0.8) +
-  labs( x = "Clusters (1 and 4 are 'average')",
-      y = "Percentage of Cluster",
+  labs( x = "Fisher Type",
+      y = "Percentage of Group",
       title = "Ability to cover family costs", 
       fill = "Household funds are..") +
-   scale_fill_viridis(option="inferno", discrete = T) +
+   scale_fill_viridis(discrete = T) +
    scale_y_continuous(labels = scales::percent) +
   theme_bw() +
    theme(axis.text.x = element_text(angle = 45, hjust=1))
@@ -459,17 +465,19 @@ x54_cluster_counts <- food_security %>%
 
 ggplot(x54_cluster_counts,
        aes(x = cluster_no, y = n, fill = x54_food_availability)) +
-  geom_bar(stat="identity", alpha = 0.8) +
+  geom_bar(position = "fill", stat="identity", alpha = 0.8) +
   labs( x = "Clusters (1 and 4 are 'average')",
       y = "Total # of Fishers",
       title = "Food Availability (Past Year)", 
       fill = "'Rating' Food availability",
-      caption = "How do you rate the last year in terms of food availability?") 
+      caption = "How do you rate the last year in terms of food availability?") +
+  scale_fill_viridis(discrete = T) + 
+  theme_bw()
 
 
 ggplot(x54_cluster_counts,
        aes(x = cluster_no, y = n, fill = x54_food_availability)) +
-  geom_bar(position="fill", stat="identity", alpha = 0.7) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
   labs( x = "Fisher Type",
       y = "Percentage of fishers",
       title = "Food Availability (past Year)", 
@@ -479,7 +487,7 @@ ggplot(x54_cluster_counts,
 ```
 
 
- "Are you confident that you will be able to procure enough food for you and your family for the next 12 months?
+ "Are you confident that you will be able to procure enough food for you and your family for the next 12 months? **THis won't be used**
 
 ```{r} 
 x59_counts <- food_security %>% 
@@ -515,13 +523,13 @@ x55_cluster_counts <- food_security %>%
 
 ggplot(x55_cluster_counts,
        aes(x = cluster_no, y = n, fill = x55_worry_food)) +
-  geom_bar(position="fill", stat="identity", alpha = 0.7) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
   labs( x = "Fisher Type",
       y = "Percentage of fishers",
       title = "Food Insecurity", 
       fill = "Frequency \n of  Worry", 
       caption = "Worry about Food Security (last 12 months)") +
-   scale_fill_viridis(option="inferno", discrete = T) +
+   scale_fill_viridis(discrete = T) +
    scale_y_continuous(labels = scales::percent) +
    theme(axis.text.x = element_text(angle = 45, hjust=1)) +
   theme_bw()
@@ -531,7 +539,7 @@ ggplot(x55_cluster_counts,
 
 #### #8. Enforcement Type + Clusters 
 
-*Starting with Enforcement* 
+
 ```{r}
 
 
@@ -572,14 +580,15 @@ swtiched_enforcement_counts <- enforcement_df %>%
 ggplot(swtiched_enforcement_counts,
        aes(x = cluster_no, y = n, fill = x49_enforcement_responsible)) +
   geom_bar(position="fill", stat="identity", alpha = 0.8) +
-  labs( x = "Cluster #",
-      y = "Proportion",
-      title = "Enforcement By Cluster", 
+  labs( x = "Fisher Type",
+      y = "Percentage of Group",
+      title = "Enforcement By Fisher Type", 
       fill = "Enforcement Type") +
     guides(colour = guide_legend(override.aes = list(size=7))) +
   theme_bw() +
+  scale_fill_viridis(discrete = T) +
   scale_y_continuous(labels = scales::percent) +
-   theme(axis.text.x = element_text(angle = 45, hjust=1))
+   theme(axis.text.x = element_text(angle = 45, hjust=1)) 
 
 
   # scale_x_continuous(limits = c(-3, 2),
@@ -588,16 +597,22 @@ ggplot(swtiched_enforcement_counts,
   #                    breaks = c( -1, 0, 1, 2)) +
 
 
+enforcement_sans_myself <- enforcement_counts %>% 
+  filter(x49_enforcement_responsible != "Myself")
 
-ggplot(enforcement_counts,
+
+ggplot(enforcement_sans_myself,
        aes(x = x49_enforcement_responsible, y = n, fill = cluster_no)) +
   geom_bar(position="fill", stat="identity", alpha = 0.8) +
   labs( x = "Enforcement Responsibility",
-      y = "Cluster",
+      y = "Precentage",
       title = "Enforcement By Cluster", 
-      color = "Cluster") +
+      fill = "Fisher Type") +
     guides(colour = guide_legend(override.aes = list(size=7))) +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
+  theme_bw() +
+  scale_fill_viridis(discrete = T) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  scale_y_continuous(labels = scales::percent)
 
 
 ```
@@ -609,6 +624,7 @@ your community?
 3. Subnational Government
 4. Other (please state)
 5. There is no enforcement system"
+
 
 ##### 9. Job Security
 
@@ -629,15 +645,15 @@ Let's graph this
 ```{r}
 ggplot(job_security_counts,
        aes(x = cluster_no, y = n, fill = x23_job_secure)) +
-  geom_bar(position="fill", stat="identity", alpha = 0.7) +
+  geom_bar(position="fill", stat="identity", alpha = 0.8) +
   labs( x = "Fisher Type",
-      y = "Total Fishers",
+      y = "Percentage of Group",
       title = "Job Security", 
-      color = "Cluster", 
-      caption = "Perception of Job Security, 'in the future'",
+      color = "Fisher Type",
       fill = "") +
    scale_fill_viridis(discrete = T) +
   theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
   coord_flip()
 
 ## Second graph with ) at the midline, like a population chart
@@ -667,6 +683,94 @@ x49_over_19 <- enforcement_and_catch %>%
   count(x49_enforcement_responsible)
 
 ```
+
+
+Question 19 and MAs 
+
+```{r}
+x19_by_ma <- scaled_km_df %>% 
+  select(x19_current_fish_catch, cluster_no, ma_name) %>% 
+  drop_na() %>% 
+  filter(x19_current_fish_catch != "Improved heavily")
+
+ma_table <- x19_by_ma %>% 
+  select(ma_name, x19_current_fish_catch) %>% 
+  group_by(ma_name) %>% 
+  count(x19_current_fish_catch) %>% 
+  arrange(-n) %>% 
+  pivot_wider(names_from = x19_current_fish_catch, values_from = n) %>% 
+  drop_na() %>% 
+  select(ma_name, 'Declined a lot', 'Declined slightly', 'Stayed the same', 'Improved slightly') %>% 
+  adorn_totals("row") 
+  
+ma_table_props <- ma_table %>% 
+    janitor::adorn_percentages(denominator = "row") %>% 
+  adorn_pct_formatting(digits = 0) %>% 
+  adorn_ns(position = "front")
+
+kable(ma_table_props) %>% 
+  kable_styling()
+
+
+  # mutate(x19_current_fish_catch = recode_factor(x19_current_fish_catch,
+  #                     "Declined a lot" = "1",
+  #                      "Declined slightly" = "2",
+  #                     "Stayed the same" = "3", 
+  #                     "Improved slightly" = "4")) %>% 
+# mutate(x19_current_fish_catch = as.numeric(x19_current_fish_catch)) 
+
+
+
+
+## table for average and SD
+
+```
+
+Now, we have a table of all 50 MAAs and their proportions broken down by perception of fish catch. 
+
+**Eye Test Notes**
+- There is very little consensus, particularly in the larger MAAs
+- General Luna has a 66% response of "stayed the same." This is the largest % among the bigger MAs
+- 45% of all respondents said "declined slightly," roughly double the next highest grouping 
+- I'm curious of two things: Is there a "consensus" statistic at the level similar to a community? As in, if we KNOW that fish have gone down, and we asked a community, what would a "good" response be? That would liekly be very, very depedent on the type of question, huh? 
+- Second, is Clsuter more predictive than geography, to see Perceived change in catch?
+
+
+#### Figures of Big MAs
+
+```{r}
+ma_top_10 <- scaled_km_df %>% 
+  select(x19_current_fish_catch, cluster_no, ma_name) %>% 
+  mutate(x19_current_fish_catch = fct_relevel(x19_current_fish_catch, 
+    "Declined a lot" = "Declined a lot",
+          "Declined slightly" = "Declined slightly",
+           "Stayed the same" = "Stayed the same",
+          "Improved slightly" = "Improved slightly",
+          "Improved heavily" = "Improved heavily")) %>% 
+  filter(ma_name %in% c('Santa Monica', 'Libertad', 'San Benito',
+'Del Carmen', 'Culasi, Sebaste',
+'General Luna', 'San Isidro, Pilar',
+'RESEX Marinha Mocapajuba')) %>% 
+  group_by(ma_name) %>% 
+  count(x19_current_fish_catch) %>% 
+  drop_na()
+  
+
+
+ggplot(ma_top_10, aes(x = ma_name, y = n, fill = x19_current_fish_catch)) +
+ geom_col(position="dodge", alpha = 0.8) +
+  theme_bw() +
+  scale_fill_viridis(discrete = T) +
+  labs(y= "Total Counts",
+       x = "Managed Access Area", 
+       fill = "Perceived Catch") +
+   theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
+Santa Monica, Libertad, San Benito,
+Del Carmen, Culasi, Sebaste,
+General Luna, San Isidro, Pilar,
+RESEX Marinha Mocapajuba
 
 
 I'll visualize the two, and verbalize + write what what each ones tells us (i.e. what's different between the two.)
@@ -978,24 +1082,39 @@ chi_x23
 
 ### Section 3. Radar Plots 
 
+**Site for Radar Chart syntax**
+[https://www.r-graph-gallery.com/143-spider-chart-with-saveral-individuals.html]
+
 ```{r}
 clusters_for_radar <- cluster_summary_df %>% 
-  select(4:14)
+  select(4:14) %>% 
+  rename('Meeting.Attendance' = x44_mean, 
+         'Leadership.Position' = x45_mean, 
+         'Enforcement.Participation' = x48_mean, 
+         'Behavior.Change' = x53_mean, 
+         'Encourage.Neighbors' = x61g_mean,
+         'M.A.Benefits' = x43_mean,
+          'Represent.Interests' = x46_mean, 
+         'Five.Years' = x52_mean, 
+        'Effective.Regulations'  = x61a_mean,
+        'Fairness' = x61f_mean, 
+        'Trust.Local' = x30a_mean) %>% 
+  data.frame()
   
 rownames(clusters_for_radar) <- c("Committed", "Resistant", "Supportive", "Wavering")
 
 max_min <- data.frame(
-  x44_mean = c(1, -1),
-  x45_mean = c (1, -1),
-  x48_mean = c(1, -1), 
-  x53_mean = c (1, -1),
-  x61g_mean = c(5, 1),
-  x43_mean = c(1, 0),
-  x46_mean = c(1, 0),
-  x52_mean = c(2, -2),
-  x61a_mean = c(5, 1),
-  x61f_mean = c(5, 1), 
-  x30a_mean = c(5, 1))
+  'Meeting.Attendance' = c(1, -1),
+  'Leadership.Position' = c (1, -1),
+  'Enforcement.Participation' = c(1, -1), 
+  'Behavior.Change' = c (1, -1),
+  'Encourage.Neighbors' = c(5, 1),
+  'M.A.Benefits' = c(1, 0),
+  'Represent.Interests' = c(1, 0),
+  'Five.Years' = c(2, -2),
+  'Effective.Regulations'  = c(5, 1),
+  'Fairness' = c(5, 1), 
+  'Trust.Local' = c(5, 1))
 
 rownames(max_min) <- c("Max", "Min")
 
@@ -1005,27 +1124,45 @@ radar_df <- rbind(max_min, clusters_for_radar)
  
 committed_radar <-radar_df[c("Max", "Min", "Committed"), ]
 
-radarchart(committed_radar)
+radarchart(committed_radar, 
+            pcol=rgb(0.9,0.6,0.1,0.9), pfcol=rgb(0.9,0.6,0.1,0.4) , plwd=2 , 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey", cglwd=1,
+    #custom labels
+    vlcex=0.6)
 
 resistant_radar <- radar_df[c("Max", "Min", "Resistant"), ]
 
-radarchart(resistant_radar)
+radarchart(resistant_radar, 
+            pcol=rgb(0.2,0.6,0.9,0.9), pfcol=rgb(0.2,0.6,0.9,0.4) , plwd=2 , 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="gray", cglwd=1,
+    #custom labels
+    vlcex=0.6)
 
 supportive_radar <- radar_df[c("Max", "Min", "Supportive"), ]
 
-radarchart(supportive_radar)
+radarchart(supportive_radar, 
+           pcol=rgb(0.1,0.9,0.9,0.9), pfcol=rgb(0.1,0.9,0.9,0.4) , plwd=2 , 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey", cglwd=2,
+    #custom labels
+    vlcex=0.6)
 
 wavering_radar <- radar_df[c("Max", "Min", "Wavering"), ]
 
-radarchart(wavering_radar)
+# Below is the Ambivalent radar
 
-# create_beautiful_radarchart(
-#   data = wavering_radar,
-#   color = "#00AFBB") 
+radarchart(wavering_radar, 
+           pcol=rgb(0.7,0.2,0.5,0.9), pfcol=rgb(0.7,0.2,0.5,0.4) , plwd=2 , 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey", cglwd=1,
+    #custom labels
+    vlcex=0.6)
 
+## Light blue, semi-transparent color:  pcol=rgb(0.2,0.5,0.5,0.9), pfcol=rgb(0.2,0.5,0.5,0.5)
 ```
 
 
 
-### Extra Tables
 

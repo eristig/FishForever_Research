@@ -2775,7 +2775,7 @@ x63_clusters <- scaled_km_df %>%
  
 x63_means <- x63_clusters %>% 
   select(eng_mean, agree_mean) %>% 
-  drop_na()  
+  drop_na() 
   st(x63_means) 
 
 
