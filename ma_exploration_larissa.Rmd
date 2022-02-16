@@ -28,39 +28,295 @@ library(stargazer)
 library(viridis)
 library(NbClust)
 library(data.table)
-# library(treemap)
 library(fmsb)
 library(ggridges)
+library(heatmaply)
+library(gridExtra)
 ```
 
-
-##### Reading in Data
-
+##### Read in data
 
 ```{r}
-scaled_sum <- read.csv("scaled_sum.csv")
+scaled_sum <- read_csv("scaled_sum.csv")
 hhs_all_complete <- read_csv("hhs_all_complete.csv")
 scaled_km_df <- read_csv("scaled_km_df.csv")
 ```
 
-
-##### Ridgeline plot for MAs
+#### Dataframe with MAAs and Question 19
 
 ```{r}
-ggplot(diamonds, aes(x = price, y = cut, fill = cut)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
-```
-
-df with MAs and question 19
-```{r}
+# All
 x19_by_ma <- scaled_km_df %>% 
   select(x19_current_fish_catch, cluster_no, ma_name, country) %>% 
-  group_by(ma_name) %>% 
+  group_by(ma_name, country) %>% 
   count(x19_current_fish_catch) %>% 
   drop_na()
+
+# Brazil
+x19_by_ma_bra <- x19_by_ma %>% 
+  filter(country == "BRA")
+
+# Micronesia
+x19_by_ma_fsm <- x19_by_ma %>% 
+  filter(country == "FSM")
+
+# Honduras
+x19_by_ma_hnd <- x19_by_ma %>% 
+  filter(country == "HND")
+
+# Indonesia
+x19_by_ma_idn <- x19_by_ma %>% 
+  filter(country == "IDN")
+
+# Mozambique
+x19_by_ma_moz <- x19_by_ma %>% 
+  filter(country == "MOZ")
+
+# Philippines
+x19_by_ma_phl <- x19_by_ma %>% 
+  filter(country == "PHL")
+
+# Palau
+x19_by_ma_plw <- x19_by_ma %>% 
+  filter(country == "PLW")
+
 ```
 
-Hey Larissa, I was thinking a ridgeline plot..it's not going how I planned. I'll leave this to your creative brain and get back to organizing Figures. This **should** be kind of fun, let me know if you get frustrated. 
-Dyl.
+#### Plots of perceived fish catch Q by MAA
+
+```{r}
+bra <- ggplot(x19_by_ma_bra, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+bra
+
+fsm <- ggplot(x19_by_ma_fsm, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+fsm
+
+hnd <- ggplot(x19_by_ma_hnd, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+hnd
+
+idn <- ggplot(x19_by_ma_idn, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+idn
+
+moz <- ggplot(x19_by_ma_moz, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+moz
+
+phl <- ggplot(x19_by_ma_phl, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+phl
+
+plw <- ggplot(x19_by_ma_plw, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+plw
+```
+
+#### Dataframe with MAAs and Question 49
+
+```{r}
+# All
+x49_by_ma <- scaled_km_df %>% 
+  select(x49_enforcement_responsible, cluster_no, ma_name, country) %>% 
+  group_by(ma_name, country) %>% 
+  count(x49_enforcement_responsible) %>% 
+  drop_na()
+
+# Brazil
+x49_by_ma_bra <- x49_by_ma %>% 
+  filter(country == "BRA")
+
+# Micronesia
+x49_by_ma_fsm <- x49_by_ma %>% 
+  filter(country == "FSM")
+
+# Honduras
+x49_by_ma_hnd <- x49_by_ma %>% 
+  filter(country == "HND")
+
+# Indonesia
+x49_by_ma_idn <- x49_by_ma %>% 
+  filter(country == "IDN")
+
+# Mozambique
+x49_by_ma_moz <- x49_by_ma %>% 
+  filter(country == "MOZ")
+
+# Philippines
+x49_by_ma_phl <- x49_by_ma %>% 
+  filter(country == "PHL")
+
+# Palau
+x49_by_ma_plw <- x49_by_ma %>% 
+  filter(country == "PLW")
+```
+
+#### Plots of enforcement responsibility Q by MAA
+
+```{r}
+bra <- ggplot(x49_by_ma_bra, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+bra
+
+fsm <- ggplot(x49_by_ma_fsm, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+fsm
+
+hnd <- ggplot(x49_by_ma_hnd, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+hnd
+
+idn <- ggplot(x49_by_ma_idn, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+idn
+
+moz <- ggplot(x49_by_ma_moz, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+moz
+
+phl <- ggplot(x49_by_ma_phl, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+phl
+
+plw <- ggplot(x49_by_ma_plw, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+plw
+```
+
+#### Dataframe with MAAs by Cluster
+
+```{r}
+# All
+cluster_by_ma <- scaled_km_df %>% 
+  select(cluster_no, ma_name, country) %>% 
+  group_by(ma_name, country) %>% 
+  count(cluster_no) %>% 
+  drop_na()
+
+# Brazil
+cluster_by_ma_bra <- cluster_by_ma %>% 
+  filter(country == "BRA")
+
+# Micronesia
+cluster_by_ma_fsm <- cluster_by_ma %>% 
+  filter(country == "FSM")
+
+# Honduras
+cluster_by_ma_hnd <- cluster_by_ma %>% 
+  filter(country == "HND")
+
+# Indonesia
+cluster_by_ma_idn <- cluster_by_ma %>% 
+  filter(country == "IDN")
+
+# Mozampbique
+cluster_by_ma_moz <- cluster_by_ma %>% 
+  filter(country == "MOZ")
+
+# Philippines
+cluster_by_ma_phl <- cluster_by_ma %>% 
+  filter(country == "PHL")
+
+# Palau
+cluster_by_ma_plw <- cluster_by_ma %>% 
+  filter(country == "PLW")
+```
+
+#### Plots of clusters by MAAs
+
+```{r}
+bra <- ggplot(cluster_by_ma_bra, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+bra
+
+fsm <- ggplot(cluster_by_ma_fsm, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+fsm
+
+hnd <- ggplot(cluster_by_ma_hnd, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+hnd
+
+idn <- ggplot(cluster_by_ma_idn, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+idn
+
+moz <- ggplot(cluster_by_ma_moz, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+moz
+
+phl <- ggplot(cluster_by_ma_phl, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "stack", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+phl
+
+plw <- ggplot(cluster_by_ma_plw, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  coord_flip() +
+  theme_light()
+
+plw
+```
+
+
