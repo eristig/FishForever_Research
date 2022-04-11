@@ -1,56 +1,63 @@
 ---
-title: "Managed-Access Grouping (Larissa + Dyl)"
-author: "Dylan Glave"
+title: "MAA Groupings"
+author: "Larissa Neilson"
 date: "2/1/2022"
-output: html_document
+output:
+  html_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(plotly)
-library(plyr)
 library(tidyverse)
 library(here)
 library(janitor)
-library(tidyverse)
+library(plotly)
 library(kableExtra)
-library(knitr)
-library(lavaanPlot)
-library(lavaan)
-library(naniar)
-library(here)
-library(scales)
-library(foreign)
-library(nnet)
-library(reshape2)
-library(vtable)
 library(stargazer)
-library(viridis)
-library(NbClust)
-library(data.table)
-library(fmsb)
-library(ggridges)
-library(heatmaply)
 library(gridExtra)
+library(patchwork)
+library(viridis)
 ```
 
-##### Read in data
 
-```{r}
-scaled_sum <- read_csv("scaled_sum.csv")
+```{r, include = FALSE}
 hhs_all_complete <- read_csv("hhs_all_complete.csv")
-scaled_km_df <- read_csv("scaled_km_df.csv")
+scaled_sum <- read_csv("scaled_sum.csv")
+scaled_km_df <- read_csv("scaled_km_df.csv") %>%
+  mutate(cluster_no = recode_factor(cluster_no,
+                                    "Wavering" = "Ambivalent")) %>%
+  mutate(x19_current_fish_catch = fct_relevel(x19_current_fish_catch,
+                                              "Improved heavily",
+                                              "Improved slightly",
+                                              "Stayed the same",
+                                              "Declined slightly",
+                                              "Declined a lot")) %>% 
+  mutate(x49_enforcement_responsible = fct_relevel(x49_enforcement_responsible,
+                                              "Fisheries Management Body",
+                                              "No enforcement system",
+                                              "Myself",
+                                              "Subnational Government",
+                                              "National Government")) %>%
+  mutate(cluster_no = fct_relevel(cluster_no,
+                                  "Committed",
+                                  "Supportive",
+                                  "Ambivalent",
+                                  "Resistant"))
 ```
 
-#### Dataframe with MAAs and Question 19
 
-```{r}
+```{r, include = FALSE}
 # All
 x19_by_ma <- scaled_km_df %>% 
   select(x19_current_fish_catch, cluster_no, ma_name, country) %>% 
   group_by(ma_name, country) %>% 
   count(x19_current_fish_catch) %>% 
   drop_na()
+
+x19_by_ma_counts <- x19_by_ma %>%
+  group_by(ma_name) %>% 
+  summarise(n = sum(n))
 
 # Brazil
 x19_by_ma_bra <- x19_by_ma %>% 
@@ -82,62 +89,74 @@ x19_by_ma_plw <- x19_by_ma %>%
 
 ```
 
-#### Plots of perceived fish catch Q by MAA
 
-```{r}
-bra <- ggplot(x19_by_ma_bra, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+```{r, include = FALSE}
+bra_catch <- ggplot(x19_by_ma_bra, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-bra
+bra_catch
 
-fsm <- ggplot(x19_by_ma_fsm, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
-  geom_bar(position = "dodge", stat = "identity") +
+fsm_catch <- ggplot(x19_by_ma_fsm, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-fsm
+fsm_catch
 
-hnd <- ggplot(x19_by_ma_hnd, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+hnd_catch <- ggplot(x19_by_ma_hnd, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-hnd
+hnd_catch
 
-idn <- ggplot(x19_by_ma_idn, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+idn_catch <- ggplot(x19_by_ma_idn, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-idn
+idn_catch
 
-moz <- ggplot(x19_by_ma_moz, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+moz_catch <- ggplot(x19_by_ma_moz, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-moz
+moz_catch
 
-phl <- ggplot(x19_by_ma_phl, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+phl_catch <- ggplot(x19_by_ma_phl, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-phl
+phl_catch
 
-plw <- ggplot(x19_by_ma_plw, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
-  geom_bar(position = "dodge", stat = "identity") +
+plw_catch <- ggplot(x19_by_ma_plw, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-plw
+plw_catch
 ```
 
-#### Dataframe with MAAs and Question 49
 
-```{r}
+```{r, include = FALSE}
 # All
 x49_by_ma <- scaled_km_df %>% 
   select(x49_enforcement_responsible, cluster_no, ma_name, country) %>% 
@@ -174,62 +193,76 @@ x49_by_ma_plw <- x49_by_ma %>%
   filter(country == "PLW")
 ```
 
-#### Plots of enforcement responsibility Q by MAA
 
-```{r}
-bra <- ggplot(x49_by_ma_bra, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+```{r, include = FALSE}
+bra_enf <- ggplot(x49_by_ma_bra, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-bra
+bra_enf
 
-fsm <- ggplot(x49_by_ma_fsm, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
-  geom_bar(position = "dodge", stat = "identity") +
+# Drop nas
+fsm_enf <- ggplot(x49_by_ma_fsm, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-fsm
+fsm_enf
 
-hnd <- ggplot(x49_by_ma_hnd, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+#Honduras allowed more than one answer for Q 49
+hnd_enf <- ggplot(x49_by_ma_hnd, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.position = "none", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-hnd
+hnd_enf
 
-idn <- ggplot(x49_by_ma_idn, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+idn_enf <- ggplot(x49_by_ma_idn, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-idn
+idn_enf
 
-moz <- ggplot(x49_by_ma_moz, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+moz_enf <- ggplot(x49_by_ma_moz, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-moz
+moz_enf
 
-phl <- ggplot(x49_by_ma_phl, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+phl_enf <- ggplot(x49_by_ma_phl, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-phl
+phl_enf
 
-plw <- ggplot(x49_by_ma_plw, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
-  geom_bar(position = "dodge", stat = "identity") +
+plw_enf <- ggplot(x49_by_ma_plw, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
-plw
+plw_enf
 ```
 
-#### Dataframe with MAAs by Cluster
 
-```{r}
+```{r, include = FALSE}
 # All
 cluster_by_ma <- scaled_km_df %>% 
   select(cluster_no, ma_name, country) %>% 
@@ -266,57 +299,132 @@ cluster_by_ma_plw <- cluster_by_ma %>%
   filter(country == "PLW")
 ```
 
-#### Plots of clusters by MAAs
 
-```{r}
-bra <- ggplot(cluster_by_ma_bra, aes(fill = cluster_no, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+```{r, include = FALSE}
+bra_clust <- ggplot(cluster_by_ma_bra, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom")
 
-bra
+bra_clust
 
-fsm <- ggplot(cluster_by_ma_fsm, aes(fill = cluster_no, y = n, x = ma_name)) +
-  geom_bar(position = "dodge", stat = "identity") +
+fsm_clust <- ggplot(cluster_by_ma_fsm, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom")
 
-fsm
+fsm_clust
 
-hnd <- ggplot(cluster_by_ma_hnd, aes(fill = cluster_no, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+hnd_clust <- ggplot(cluster_by_ma_hnd, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom")
 
-hnd
+hnd_clust
 
-idn <- ggplot(cluster_by_ma_idn, aes(fill = cluster_no, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+idn_clust <- ggplot(cluster_by_ma_idn, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom")
 
-idn
+idn_clust
 
-moz <- ggplot(cluster_by_ma_moz, aes(fill = cluster_no, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+moz_clust <- ggplot(cluster_by_ma_moz, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom")
 
-moz
+moz_clust
 
-phl <- ggplot(cluster_by_ma_phl, aes(fill = cluster_no, y = n, x = ma_name)) +
-  geom_bar(position = "stack", stat = "identity") +
+phl_clust <- ggplot(cluster_by_ma_phl, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom")
 
-phl
+phl_clust
 
-plw <- ggplot(cluster_by_ma_plw, aes(fill = cluster_no, y = n, x = ma_name)) +
-  geom_bar(position = "dodge", stat = "identity") +
+plw_clust <- ggplot(cluster_by_ma_plw, aes(fill = cluster_no, y = n, x = ma_name)) +
+  geom_bar(position = "fill", stat = "identity") +
   coord_flip() +
-  theme_light()
+  theme_light() +
+  scale_fill_viridis_d(option = "viridis") +
+  theme(legend.direction = "vertical", legend.position = "bottom")
 
-plw
+plw_clust
 ```
 
+#### Brazil
+
+```{r, echo = FALSE}
+# Brazil
+bra_clust + bra_enf
+
+bra_clust + bra_catch
+```
+
+#### Micronesia
+
+```{r, echo = FALSE}
+# Micronesia
+fsm_clust + fsm_enf
+
+fsm_clust + fsm_catch
+```
+
+#### Honduras
+
+```{r, echo = FALSE}
+# Honduras
+hnd_clust + hnd_enf
+
+hnd_clust + hnd_catch
+```
+
+#### Indonesia
+
+```{r, echo = FALSE}
+# Indonesia
+idn_clust + idn_enf
+
+idn_clust + idn_catch
+```
+
+#### Mozambique
+
+```{r, echo = FALSE}
+# Mozambique
+moz_clust + moz_enf
+
+moz_clust + moz_catch
+```
+
+#### Philippines
+
+```{r, echo = FALSE}
+# Philippines
+phl_clust + phl_enf
+
+phl_clust + phl_catch
+```
+
+#### Palau
+
+```{r, echo = FALSE}
+# Palau
+plw_clust + plw_enf
+
+plw_clust + plw_catch
+```
 
