@@ -1,0 +1,78 @@
+---
+title: "Governance Analysis"
+author: "Larissa Neilson"
+date: "4/15/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+First, we need to join our country staff survey data to the HHS data. Then, we need to look at the variables and determine if we should use an Ordinal Logistic Regression or a Binary Logistic Regression.
+
+### Our predictors of governance
+
+- Governance in law
+- Governance in practice
+- Who's responsible for enforcement (HHS Q)
+
+### Outcome
+
+#### Four fisher archetypes:
+
+- Committed
+- Supportive
+- Ambivalent
+- Resistant
+
+#### Also consider these variables:
+
+- Country
+- Perceived catch
+- Food security / job security
+
+```{r}
+# Read in the data
+hhs_all_complete <- read_csv("hhs_all_complete.csv")
+scaled_sum <- read_csv("scaled_sum.csv") 
+scaled_km_df <- read_csv("scaled_km_df.csv") %>% # Use this one
+  mutate(cluster_no = recode_factor(cluster_no,
+                                    "Wavering" = "Ambivalent")) %>%
+  mutate(x19_current_fish_catch = fct_relevel(x19_current_fish_catch,
+                                              "Improved heavily",
+                                              "Improved slightly",
+                                              "Stayed the same",
+                                              "Declined slightly",
+                                              "Declined a lot")) %>% 
+  mutate(x49_enforcement_responsible = fct_relevel(x49_enforcement_responsible,
+                                              "Fisheries Management Body",
+                                              "No enforcement system",
+                                              "Myself",
+                                              "Subnational Government",
+                                              "National Government")) %>%
+  mutate(cluster_no = fct_relevel(cluster_no,
+                                  "Committed",
+                                  "Supportive",
+                                  "Ambivalent",
+                                  "Resistant"))
+staff_survey <- read_csv("staff_survey.csv")
+```
+
+
+```{r}
+# Join staff survey data with HHS data
+gov_data <- inner_join(scaled_km_df, staff_survey, by = "ma_name")
+
+gov_data <- gov_data %>%
+  select(ma_name, gov_law, gov_practice, country, x49_enforcement_responsible, cluster_no)
+```
+
+
+```{r}
+# Analysis
+```
+
