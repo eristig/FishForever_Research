@@ -17,15 +17,17 @@ library(ggeffects)
 library(effects)
 library(forcats)
 library(gtsummary)
+library(brant)
 ```
-
-First, we need to join our country staff survey data to the HHS data. Then, we need to look at the variables and determine if we should use an Ordinal Logistic Regression or a Binary Logistic Regression.
 
 ### Our predictors of governance
 
+- Country
 - Governance in law
 - Governance in practice
 - Who's responsible for enforcement (HHS Q)
+- Perceived fish catch
+- Food security
 
 ### Outcome
 
@@ -36,31 +38,12 @@ First, we need to join our country staff survey data to the HHS data. Then, we n
 - Ambivalent
 - Resistant
 
-#### Also consider these variables:
-
-- Country
-- Perceived catch
-- Food security / job security
-
-```{r}
+```{r, echo = FALSE, results = FALSE, message = FALSE}
 # Read in the data
 hhs_all_complete <- read_csv("hhs_all_complete.csv")
-scaled_sum <- read_csv("scaled_sum.csv") 
-scaled_km_df <- read_csv("scaled_km_df.csv") %>% # Use this one
+scaled_km_df <- read_csv("scaled_km_df.csv") %>%
   mutate(cluster_no = recode_factor(cluster_no,
                                     "Wavering" = "Ambivalent")) %>%
-  mutate(x19_current_fish_catch = fct_relevel(x19_current_fish_catch,
-                                              "Improved heavily",
-                                              "Improved slightly",
-                                              "Stayed the same",
-                                              "Declined slightly",
-                                              "Declined a lot")) %>% 
- # mutate(x49_enforcement_responsible = fct_relevel(x49_enforcement_responsible,
-                                              #"Fisheries Management Body",
-                                              #"No enforcement system",
-                                              #"Myself",
-                                              #"Subnational Government",
-                                              #"National Government")) %>%
   mutate(cluster_no = fct_relevel(cluster_no,
                                   "Committed",
                                   "Supportive",
@@ -75,29 +58,80 @@ staff_survey <- read_csv("staff_survey.csv")
 gov_data <- inner_join(scaled_km_df, staff_survey, by = "ma_name")
 
 gov_data <- gov_data %>%
-  dplyr::select(ma_name, gov_law, gov_practice, country, x6_gender, x49_enforcement_responsible, x54_food_availability, cluster_no)
+  dplyr::select(ma_name, gov_law, gov_practice, country, x6_gender, x19_current_fish_catch, x49_enforcement_responsible, x54_food_availability, cluster_no)
+
+# Clean data
+gov_data <- gov_data %>% 
+  mutate(x49_enforcement_responsible = na_if(x49_enforcement_responsible, "na")) %>%
+  mutate(x49_enforcement_responsible = recode_factor(x49_enforcement_responsible,
+                                                     "National Government,Subnational Government" = "Subnational Government",
+                                                     "There is no enforcement system" = "No enforcement system",
+                                                     "Subnational Government,Myself" = "Subnational Government",
+                                                     "Myself,Subnational Government" = "Subnational Government",
+                                                     "National Government, No enforcement system" = "National Government",
+                                                     "Subnational Government,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "Fisheries Management Body,Subnational Government" = "Fisheries Management Body",
+                                                     "Myself,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "Fisheries Management Body,No enforcement system" = "Fisheries Management Body",
+                                                     "Myself,Subnational Government,National Government" = "Subnational Government",
+                                                     "National Government,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "Myself,No enforcement system" = "Myself",
+                                                     "Subnational Government,National Government,Myself" = "Subnational Government",
+                                                     "No enforcement system,Myself" = "Myself",
+                                                     "National Government,No enforcement system" = "No enforcement system",
+                                                     "Subnational Government,Myself,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "No enforcement system,Subnational Government" = "Subnational Government")) %>% 
+  drop_na()
+
 ```
 
-We will use Multiple Logistic Regression
+We will use Ordinal Logistic Regression
 
 ```{r}
 # Get the data ready for OLR
-str(gov_data)
-
+# Convert to factors
 gov_data$gov_law <- as.factor(gov_data$gov_law)
 gov_data$gov_practice <- as.factor(gov_data$gov_practice)
+gov_data$country <- as.factor(gov_data$country)
+gov_data$x54_food_availability <- as.factor(gov_data$x54_food_availability)
+gov_data$x19_current_fish_catch <- as.factor(gov_data$x19_current_fish_catch)
 
-gov_data <- gov_data %>%
-  drop_na()
+# Update ref level
+gov_data$gov_law <- relevel(gov_data$gov_law, ref = "True co-management")
+gov_data$gov_practice <- relevel(gov_data$gov_practice, ref = "True co-management")
+gov_data$country <- relevel(gov_data$country, ref = "PHL")
+gov_data$x54_food_availability <- relevel(gov_data$x54_food_availability, ref = "OK")
+gov_data$x19_current_fish_catch <- relevel(gov_data$x19_current_fish_catch, ref = "Stayed the same")
 
+str(gov_data)
 summary(gov_data)
 ```
 
 
-```{r}
+```{r, include = FALSE}
 # Perform OLR + data viz
 # JUST with governance in law and in practice first
 gov_data_olr <- clm(cluster_no ~ gov_law + gov_practice, data = gov_data, link = "logit")
+summary(gov_data_olr)
+
+confint(gov_data_olr)
+exp(coef(gov_data_olr))
+exp(confint(gov_data_olr))
+#exp(cbind(OR = coef(gov_data_olr), ci))
+
+# Run model including enforcement responsibility
+gov_data_olr <- clm(cluster_no ~ gov_law + gov_practice + x49_enforcement_responsible, data = gov_data, link = "logit")
+summary(gov_data_olr)
+
+confint(gov_data_olr)
+exp(coef(gov_data_olr))
+exp(confint(gov_data_olr))
+#exp(cbind(OR = coef(m), ci))
+
+# Run model including other possible predictors (country, enforcement, food availability)
+gov_data_olr <- clm(cluster_no ~ gov_law + gov_practice + x49_enforcement_responsible + x54_food_availability, data = gov_data, link = "logit")
+
+#x19_current_fish_catch, x49_enforcement_responsible, x54_food_availability
 
 summary(gov_data_olr)
 confint(gov_data_olr)
@@ -105,49 +139,88 @@ exp(coef(gov_data_olr))
 exp(confint(gov_data_olr))
 ```
 
-#### Interpreting OLR results:
-
-First, our ordinal outcome variable goes from Committed --> Resistant
-So, a negative coefficient represents a negative association between the predictor variable and how resistant fishers are in the MAA.
-
-A positive coefficient represents a positive association between the predictor variable and how resistant fishers are in the MAA.
-
-
-- An MAA that is true co-management under law, as opposed to another form of governance, is associated with a higher likelihood of having more committed fishers
-
-- An MAA that is more top-down in practice, as opposed to another form of governance, is associated with a higher likelihood of having more resistant fishers
-
-- An MAA that is true co-management in practice, as opposed to another form of governance, is associated with a higher likelihood of having more resistant fishers
-
-All of these are significant findings. 
-
-Example sentence:
-
-There was a positive association between a MAA being more top-down in practice and having more resistant-leaning fishers B = 0.93, SE = 0.08, p = < 2e-16, 95% CI = 0.78 to 1.08
 
 ```{r}
-# Run model including enforcement responsibility + governance
-# Have to remove Honduras because they allowed multiple answers for Q49 
-gov_no_hd <- gov_data %>% 
-  filter(!country == "HND")
+# Use polr to conduct OLR
+# Governance, country, fish catch
+gov_ols <- polr(cluster_no ~ gov_law + gov_practice + country + x19_current_fish_catch, data = gov_data, Hess = TRUE)
+summary(gov_ols)
 
-gov_no_hd_olr <- clm(cluster_no ~ gov_law + gov_practice + x49_enforcement_responsible, data = gov_no_hd, link = "logit")
+brant(gov_ols)
 
-summary(gov_no_hd_olr)
-confint(gov_no_hd_olr)
-exp(coef(gov_no_hd_olr))
-exp(confint(gov_no_hd_olr))
+summary <- coef(summary(gov_ols))
+p <- pnorm(abs(summary[, "t value"]), lower.tail = FALSE) * 2
+summary <- cbind(summary, "p value" = p)
+summary
 
-# Run model including other possible predictors (country, gender, enforcement, food availability)
-gov_ctry_olr <- clm(cluster_no ~ country + x6_gender + x49_enforcement_responsible + x54_food_availability, data = gov_no_hd, link = "logit")
+ci <- confint(gov_ols)
+confint.default(gov_ols)
+exp(coef(gov_ols))
+exp(cbind(OR = coef(gov_ols), ci))
 
-summary(gov_ctry_olr)
-confint(gov_ctry_olr)
-exp(coef(gov_ctry_olr))
-exp(confint(gov_ctry_olr))
-
+tbl_regression(gov_ols, exponentiate = TRUE)
 ```
 
+
+```{r}
+# Governance, country, enforcement
+gov_ols <- polr(cluster_no ~ gov_law + gov_practice + country + x49_enforcement_responsible, data = gov_data, Hess = TRUE)
+summary(gov_ols)
+
+brant(gov_ols)
+
+summary <- coef(summary(gov_ols))
+p <- pnorm(abs(summary[, "t value"]), lower.tail = FALSE) * 2
+summary <- cbind(summary, "p value" = p)
+summary
+
+ci <- confint(gov_ols)
+confint.default(gov_ols)
+exp(coef(gov_ols))
+exp(cbind(OR = coef(gov_ols), ci))
+
+tbl_regression(gov_ols, exponentiate = TRUE)
+```
+
+```{r}
+# Governance, country, food availability
+gov_ols <- polr(cluster_no ~ gov_law + gov_practice + country + x54_food_availability, data = gov_data, Hess = TRUE)
+summary(gov_ols)
+
+brant(gov_ols)
+
+summary <- coef(summary(gov_ols))
+p <- pnorm(abs(summary[, "t value"]), lower.tail = FALSE) * 2
+summary <- cbind(summary, "p value" = p)
+summary
+
+ci <- confint(gov_ols)
+confint.default(gov_ols)
+exp(coef(gov_ols))
+exp(cbind(OR = coef(gov_ols), ci))
+
+tbl_regression(gov_ols, exponentiate = TRUE)
+```
+
+```{r}
+# All variables
+gov_ols <- polr(cluster_no ~ gov_law + gov_practice + x19_current_fish_catch + x49_enforcement_responsible + x54_food_availability, data = gov_data, Hess = TRUE)
+summary(gov_ols)
+
+brant(gov_ols)
+
+summary <- coef(summary(gov_ols))
+p <- pnorm(abs(summary[, "t value"]), lower.tail = FALSE) * 2
+summary <- cbind(summary, "p value" = p)
+summary
+
+ci <- confint(gov_ols)
+confint.default(gov_ols)
+exp(coef(gov_ols))
+exp(cbind(OR = coef(gov_ols), ci))
+
+tbl_regression(gov_ols, exponentiate = TRUE)
+```
 
 
 
