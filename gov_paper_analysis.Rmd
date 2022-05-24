@@ -1,7 +1,7 @@
 ---
 title: "Governance Analysis"
 author: "Larissa Neilson"
-date: "4/15/2022"
+date: "5/19/2022"
 output: html_document
 ---
 
@@ -18,6 +18,7 @@ library(effects)
 library(forcats)
 library(gtsummary)
 library(brant)
+library(kableExtra)
 ```
 
 ### Our predictors of governance
@@ -45,10 +46,10 @@ scaled_km_df <- read_csv("scaled_km_df.csv") %>%
   mutate(cluster_no = recode_factor(cluster_no,
                                     "Wavering" = "Ambivalent")) %>%
   mutate(cluster_no = fct_relevel(cluster_no,
-                                  "Committed",
-                                  "Supportive",
+                                  "Resistant",
                                   "Ambivalent",
-                                  "Resistant")) 
+                                  "Supportive",
+                                  "Committed")) 
 staff_survey <- read_csv("staff_survey.csv")
 ```
 
@@ -83,6 +84,7 @@ gov_data <- gov_data %>%
                                                      "No enforcement system,Subnational Government" = "Subnational Government")) %>% 
   drop_na()
 
+# write.csv(gov_data, file = "gov_data.csv")
 ```
 
 We will use Ordinal Logistic Regression
@@ -100,11 +102,34 @@ gov_data$x19_current_fish_catch <- as.factor(gov_data$x19_current_fish_catch)
 gov_data$gov_law <- relevel(gov_data$gov_law, ref = "True co-management")
 gov_data$gov_practice <- relevel(gov_data$gov_practice, ref = "True co-management")
 gov_data$country <- relevel(gov_data$country, ref = "PHL")
+gov_data$x49_enforcement_responsible <- relevel(gov_data$x49_enforcement_responsible, ref = "Fisheries Management Body")
 gov_data$x54_food_availability <- relevel(gov_data$x54_food_availability, ref = "OK")
 gov_data$x19_current_fish_catch <- relevel(gov_data$x19_current_fish_catch, ref = "Stayed the same")
 
 str(gov_data)
 summary(gov_data)
+
+# Chi-square tests for independence
+chi2 <- chisq.test(gov_data$cluster_no, gov_data$country, correct=F)
+c(chi2$statistic, chi2$p.value)
+print(chi2)
+
+chi2 <- chisq.test(gov_data$gov_law, gov_data$country, correct=F)
+print(chi2)
+
+chi2 <- chisq.test(gov_data$gov_practice, gov_data$country, correct=F)
+print(chi2)
+
+chi2 <- chisq.test(gov_data$x54_food_availability, gov_data$country, correct=F)
+print(chi2)
+
+gov_data_sum <- gov_data %>% 
+  filter(x19_current_fish_catch == "Improved heavily") %>% 
+  count(cluster_no)
+
+gov_data_sum %>%
+  kbl() %>%
+  kable_styling()
 ```
 
 
@@ -143,7 +168,7 @@ exp(confint(gov_data_olr))
 ```{r}
 # Use polr to conduct OLR
 # Governance, country, fish catch
-gov_ols <- polr(cluster_no ~ gov_law + gov_practice + country + x19_current_fish_catch, data = gov_data, Hess = TRUE)
+gov_ols <- polr(cluster_no ~ gov_law + gov_practice + x19_current_fish_catch, data = gov_data, Hess = TRUE)
 summary(gov_ols)
 
 brant(gov_ols)
@@ -164,7 +189,7 @@ tbl_regression(gov_ols, exponentiate = TRUE)
 
 ```{r}
 # Governance, country, enforcement
-gov_ols <- polr(cluster_no ~ gov_law + gov_practice + country + x49_enforcement_responsible, data = gov_data, Hess = TRUE)
+gov_ols <- polr(cluster_no ~ gov_law + gov_practice + x49_enforcement_responsible, data = gov_data, Hess = TRUE)
 summary(gov_ols)
 
 brant(gov_ols)
@@ -184,7 +209,7 @@ tbl_regression(gov_ols, exponentiate = TRUE)
 
 ```{r}
 # Governance, country, food availability
-gov_ols <- polr(cluster_no ~ gov_law + gov_practice + country + x54_food_availability, data = gov_data, Hess = TRUE)
+gov_ols <- polr(cluster_no ~ gov_law + gov_practice + x54_food_availability, data = gov_data, Hess = TRUE)
 summary(gov_ols)
 
 brant(gov_ols)
@@ -222,6 +247,25 @@ exp(cbind(OR = coef(gov_ols), ci))
 tbl_regression(gov_ols, exponentiate = TRUE)
 ```
 
+```{r}
+# All variables with country
+gov_ols <- polr(cluster_no ~ gov_law + country + gov_practice + x19_current_fish_catch + x49_enforcement_responsible + x54_food_availability, data = gov_data, Hess = TRUE)
+summary(gov_ols)
+
+brant(gov_ols)
+
+summary <- coef(summary(gov_ols))
+p <- pnorm(abs(summary[, "t value"]), lower.tail = FALSE) * 2
+summary <- cbind(summary, "p value" = p)
+summary
+
+ci <- confint(gov_ols)
+confint.default(gov_ols)
+exp(coef(gov_ols))
+exp(cbind(OR = coef(gov_ols), ci))
+
+tbl_regression(gov_ols, exponentiate = TRUE)
+```
 
 
 
