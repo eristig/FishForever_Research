@@ -19,6 +19,7 @@ library(forcats)
 library(gtsummary)
 library(brant)
 library(kableExtra)
+library(corrplot)
 ```
 
 ### Our predictors of governance
@@ -108,21 +109,46 @@ gov_data$x19_current_fish_catch <- relevel(gov_data$x19_current_fish_catch, ref 
 
 str(gov_data)
 summary(gov_data)
+```
 
-# Chi-square tests for independence
-chi2 <- chisq.test(gov_data$cluster_no, gov_data$country, correct=F)
-c(chi2$statistic, chi2$p.value)
-print(chi2)
+```{r}
+# Chi-square tests for independence + correlation plots
+chi1 <- chisq.test(gov_data$gov_law, gov_data$country, correct=F)
+print(chi1)
 
-chi2 <- chisq.test(gov_data$gov_law, gov_data$country, correct=F)
-print(chi2)
+corrplot(chi1$residuals, is.cor = FALSE)
 
 chi2 <- chisq.test(gov_data$gov_practice, gov_data$country, correct=F)
 print(chi2)
 
-chi2 <- chisq.test(gov_data$x54_food_availability, gov_data$country, correct=F)
-print(chi2)
+corrplot(chi2$residuals, is.cor = FALSE)
 
+chi3 <- chisq.test(gov_data$gov_law, gov_data$cluster_no, correct=F)
+print(chi3)
+
+corrplot(chi3$residuals, is.cor = FALSE)
+
+chi4 <- chisq.test(gov_data$gov_practice, gov_data$cluster_no, correct=F)
+print(chi4)
+
+corrplot(chi4$residuals, is.cor = FALSE)
+
+chi5 <- chisq.test(gov_data$cluster_no, gov_data$country, correct=F)
+print(chi5)
+
+corrplot(chi5$residuals, is.cor = FALSE)
+
+chi6 <- chisq.test(gov_data$gov_law, gov_data$x49_enforcement_responsible, correct=F)
+print(chi6)
+
+corrplot(chi6$residuals, is.cor = FALSE)
+
+chi7 <- chisq.test(gov_data$gov_practice, gov_data$x49_enforcement_responsible, correct=F)
+print(chi7)
+```
+
+```{r}
+# Visualizing n's for small n answers
 gov_data_sum <- gov_data %>% 
   filter(x19_current_fish_catch == "Improved heavily") %>% 
   count(cluster_no)
@@ -131,7 +157,6 @@ gov_data_sum %>%
   kbl() %>%
   kable_styling()
 ```
-
 
 ```{r, include = FALSE}
 # Perform OLR + data viz
@@ -163,7 +188,6 @@ confint(gov_data_olr)
 exp(coef(gov_data_olr))
 exp(confint(gov_data_olr))
 ```
-
 
 ```{r}
 # Use polr to conduct OLR
@@ -266,22 +290,5 @@ exp(cbind(OR = coef(gov_ols), ci))
 
 tbl_regression(gov_ols, exponentiate = TRUE)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

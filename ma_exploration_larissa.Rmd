@@ -20,7 +20,6 @@ library(patchwork)
 library(viridis)
 ```
 
-
 ```{r, include = FALSE}
 hhs_all_complete <- read_csv("hhs_all_complete.csv")
 scaled_sum <- read_csv("scaled_sum.csv")
@@ -44,19 +43,45 @@ scaled_km_df <- read_csv("scaled_km_df.csv") %>%
                                   "Supportive",
                                   "Ambivalent",
                                   "Resistant"))
-```
 
+# Clean Honduras data
+clean_gov_data <- scaled_km_df %>%
+  mutate(x49_enforcement_responsible = recode_factor(x49_enforcement_responsible,
+                                                     "National Government,Subnational Government" = "Subnational Government",
+                                                     "There is no enforcement system" = "No enforcement system",
+                                                     "Subnational Government,Myself" = "Subnational Government",
+                                                     "Myself,Subnational Government" = "Subnational Government",
+                                                     "National Government, No enforcement system" = "National Government",
+                                                     "Subnational Government,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "Fisheries Management Body,Subnational Government" = "Fisheries Management Body",
+                                                     "Myself,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "Fisheries Management Body,No enforcement system" = "Fisheries Management Body",
+                                                     "Myself,Subnational Government,National Government" = "Subnational Government",
+                                                     "National Government,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "Myself,No enforcement system" = "Myself",
+                                                     "Subnational Government,National Government,Myself" = "Subnational Government",
+                                                     "No enforcement system,Myself" = "Myself",
+                                                     "National Government,No enforcement system" = "No enforcement system",
+                                                     "Subnational Government,Myself,Fisheries Management Body" = "Fisheries Management Body",
+                                                     "No enforcement system,Subnational Government" = "Subnational Government")) %>%
+  mutate(x49_enforcement_responsible = fct_relevel(x49_enforcement_responsible,
+                                              "Fisheries Management Body",
+                                              "No enforcement system",
+                                              "Myself",
+                                              "Subnational Government",
+                                              "National Government"))
+```
 
 ```{r, include = FALSE}
 # All
-x19_by_ma <- scaled_km_df %>% 
+x19_by_ma <- clean_gov_data %>% 
   select(x19_current_fish_catch, cluster_no, ma_name, country) %>% 
   group_by(ma_name, country) %>% 
   count(x19_current_fish_catch) %>% 
   drop_na()
 
 x19_by_ma_counts <- x19_by_ma %>%
-  group_by(ma_name) %>% 
+  group_by(ma_name, country) %>% 
   summarise(n = sum(n))
 
 # Brazil
@@ -88,7 +113,6 @@ x19_by_ma_plw <- x19_by_ma %>%
   filter(country == "PLW")
 
 ```
-
 
 ```{r, include = FALSE}
 bra_catch <- ggplot(x19_by_ma_bra, aes(fill = x19_current_fish_catch, y = n, x = ma_name)) +
@@ -155,10 +179,9 @@ plw_catch <- ggplot(x19_by_ma_plw, aes(fill = x19_current_fish_catch, y = n, x =
 plw_catch
 ```
 
-
 ```{r, include = FALSE}
 # All
-x49_by_ma <- scaled_km_df %>% 
+x49_by_ma <- clean_gov_data %>% 
   select(x49_enforcement_responsible, cluster_no, ma_name, country) %>% 
   group_by(ma_name, country) %>% 
   count(x49_enforcement_responsible) %>% 
@@ -193,7 +216,6 @@ x49_by_ma_plw <- x49_by_ma %>%
   filter(country == "PLW")
 ```
 
-
 ```{r, include = FALSE}
 bra_enf <- ggplot(x49_by_ma_bra, aes(fill = x49_enforcement_responsible, y = n, x = ma_name)) +
   geom_bar(position = "fill", stat = "identity") +
@@ -220,7 +242,7 @@ hnd_enf <- ggplot(x49_by_ma_hnd, aes(fill = x49_enforcement_responsible, y = n, 
   coord_flip() +
   theme_light() +
   scale_fill_viridis_d(option = "viridis") +
-  theme(legend.position = "none", axis.text.y=element_blank(), axis.title.y = element_blank())
+  theme(legend.direction = "vertical", legend.position = "bottom", axis.text.y=element_blank(), axis.title.y = element_blank())
 
 hnd_enf
 
@@ -261,18 +283,23 @@ plw_enf <- ggplot(x49_by_ma_plw, aes(fill = x49_enforcement_responsible, y = n, 
 plw_enf
 ```
 
-
 ```{r, include = FALSE}
 # All
-cluster_by_ma <- scaled_km_df %>% 
+cluster_by_ma <- clean_gov_data %>% 
   select(cluster_no, ma_name, country) %>% 
   group_by(ma_name, country) %>% 
   count(cluster_no) %>% 
   drop_na()
 
+cluster_by_ma_counts <- cluster_by_ma %>%
+  group_by(ma_name, country) %>% 
+  summarise(n = sum(n))
+
 # Brazil
 cluster_by_ma_bra <- cluster_by_ma %>% 
-  filter(country == "BRA")
+  filter(country == "BRA") %>%
+  filter(ma_name != "RESEX Maracanã") %>% 
+  filter(ma_name != "RESEX Caeté-Taperaçu")
 
 # Micronesia
 cluster_by_ma_fsm <- cluster_by_ma %>% 
@@ -280,15 +307,19 @@ cluster_by_ma_fsm <- cluster_by_ma %>%
 
 # Honduras
 cluster_by_ma_hnd <- cluster_by_ma %>% 
-  filter(country == "HND")
+  filter(country == "HND") %>% 
+  filter(ma_name != "Santa Rosa de Aguan") %>% 
+  filter(ma_name != "Roatan") %>% 
+  filter(ma_name != "Iriona")
 
 # Indonesia
 cluster_by_ma_idn <- cluster_by_ma %>% 
   filter(country == "IDN")
 
-# Mozampbique
+# Mozambique
 cluster_by_ma_moz <- cluster_by_ma %>% 
-  filter(country == "MOZ")
+  filter(country == "MOZ") %>% 
+  filter(ma_name != "Simuco")
 
 # Philippines
 cluster_by_ma_phl <- cluster_by_ma %>% 
@@ -299,16 +330,18 @@ cluster_by_ma_plw <- cluster_by_ma %>%
   filter(country == "PLW")
 ```
 
-
 ```{r, include = FALSE}
 bra_clust <- ggplot(cluster_by_ma_bra, aes(fill = cluster_no, y = n, x = ma_name)) +
   geom_bar(position = "fill", stat = "identity") +
+  xlab(NULL) +
+  ylab("n %") +
   coord_flip() +
-  theme_light() +
+  theme_minimal() +
   scale_fill_viridis_d(option = "viridis") +
   theme(legend.direction = "vertical", legend.position = "bottom")
 
-bra_clust
+bra_clust + labs(fill = "Fisher Archetype")
+
 
 fsm_clust <- ggplot(cluster_by_ma_fsm, aes(fill = cluster_no, y = n, x = ma_name)) +
   geom_bar(position = "fill", stat = "identity") +
@@ -321,12 +354,14 @@ fsm_clust
 
 hnd_clust <- ggplot(cluster_by_ma_hnd, aes(fill = cluster_no, y = n, x = ma_name)) +
   geom_bar(position = "fill", stat = "identity") +
+  xlab(NULL) +
+  ylab("n %") +
   coord_flip() +
-  theme_light() +
+  theme_minimal() +
   scale_fill_viridis_d(option = "viridis") +
   theme(legend.direction = "vertical", legend.position = "bottom")
 
-hnd_clust
+hnd_clust + labs(fill = "Fisher Archetype")
 
 idn_clust <- ggplot(cluster_by_ma_idn, aes(fill = cluster_no, y = n, x = ma_name)) +
   geom_bar(position = "fill", stat = "identity") +
@@ -339,12 +374,14 @@ idn_clust
 
 moz_clust <- ggplot(cluster_by_ma_moz, aes(fill = cluster_no, y = n, x = ma_name)) +
   geom_bar(position = "fill", stat = "identity") +
+  xlab(NULL) +
+  ylab("n %") +
   coord_flip() +
-  theme_light() +
+  theme_minimal() +
   scale_fill_viridis_d(option = "viridis") +
   theme(legend.direction = "vertical", legend.position = "bottom")
 
-moz_clust
+moz_clust + labs(fill = "Fisher Archetype")
 
 phl_clust <- ggplot(cluster_by_ma_phl, aes(fill = cluster_no, y = n, x = ma_name)) +
   geom_bar(position = "fill", stat = "identity") +
@@ -428,3 +465,11 @@ plw_clust + plw_enf
 plw_clust + plw_catch
 ```
 
+
+```{r}
+# Final figures for country MAA visualizations - Brazil, Honduras, Mozambique
+# Only the types x gov in law and gov in practice
+# Exclude MAAs with n > 10
+
+
+```
